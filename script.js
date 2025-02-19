@@ -65,13 +65,19 @@ items.forEach(item => {
   });
 });
 
-// Long press support for mobile
+// Improved long press support for mobile with movement threshold
 items.forEach(item => {
   let timer = null;
+  let startX = 0;
+  let startY = 0;
+  
   item.addEventListener('touchstart', function(e) {
-    e.preventDefault(); // Prevent text selection during long press
+    e.preventDefault();
+    const touch = e.touches[0];
+    startX = touch.clientX;
+    startY = touch.clientY;
     timer = setTimeout(() => {
-      if(item.classList.contains('selected')) {
+      if (item.classList.contains('selected')) {
         item.classList.remove('selected');
         item.dataset.count = 0;
         updateDisplay(item);
@@ -79,8 +85,18 @@ items.forEach(item => {
     }, 800);
   }, false);
   
-  item.addEventListener('touchend', () => clearTimeout(timer), false);
-  item.addEventListener('touchmove', () => clearTimeout(timer), false);
+  item.addEventListener('touchmove', function(e) {
+    const touch = e.touches[0];
+    const deltaX = Math.abs(touch.clientX - startX);
+    const deltaY = Math.abs(touch.clientY - startY);
+    if (deltaX > 10 || deltaY > 10) {
+      clearTimeout(timer);
+    }
+  }, false);
+  
+  item.addEventListener('touchend', function() {
+    clearTimeout(timer);
+  }, false);
 });
 
 resetButton.addEventListener('click', function() {
