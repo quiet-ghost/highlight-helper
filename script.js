@@ -65,6 +65,23 @@ items.forEach(item => {
   });
 });
 
+// Long press support for mobile
+items.forEach(item => {
+  item.addEventListener('touchstart', function(e) {
+    e.preventDefault(); // Prevent text selection during long press
+    touchTimer = setTimeout(() => {
+      if(item.classList.contains('selected')) {
+        item.classList.remove('selected');
+        item.dataset.count = 0;
+        item.textContent = item.dataset.originalText;
+      }
+    }, 800);
+  }, false);
+  
+  item.addEventListener('touchend', () => clearTimeout(touchTimer), false);
+  item.addEventListener('touchmove', () => clearTimeout(touchTimer), false);
+});
+
 resetButton.addEventListener('click', function() {
   input.value = '';
   items.forEach(item => {
@@ -77,20 +94,4 @@ resetButton.addEventListener('click', function() {
 
 darkModeToggle.addEventListener('click', function() {
   document.body.classList.toggle('dark-mode');
-});
-
-// Add long press support for mobile devices on cart items
-const longPressDuration = 800; // in milliseconds
-let touchTimer = null;
-items.forEach(item => {
-  item.addEventListener('touchstart', () => {
-    touchTimer = setTimeout(() => {
-      if (item.classList.contains('selected')) {
-        item.classList.remove('selected');
-      }
-    }, longPressDuration);
-  }, false);
-
-  item.addEventListener('touchend', () => clearTimeout(touchTimer), false);
-  item.addEventListener('touchmove', () => clearTimeout(touchTimer), false);
 });
