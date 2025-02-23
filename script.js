@@ -75,6 +75,7 @@ resetButton.addEventListener('click', function() {
   });
 });
 
+// Optional: Remove or comment out the darkModeToggle event if handled server-side by htmx
 darkModeToggle.addEventListener('click', function() {
   document.body.classList.toggle('dark-mode');
 });
