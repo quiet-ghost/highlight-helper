@@ -18,6 +18,13 @@ function updateDisplay(item) {
   item.textContent = item.dataset.originalText + (count > 1 ? " x" + count : "");
 }
 
+// On page load: apply persisted dark mode state.
+if (localStorage.getItem("dark-mode") === "enabled") {
+  document.body.classList.add("dark-mode");
+} else {
+  document.body.classList.remove("dark-mode");
+}
+
 input.addEventListener('keydown', function(e) {
   if (e.key === 'Enter') {
     e.preventDefault();
@@ -77,4 +84,10 @@ resetButton.addEventListener('click', function() {
 
 darkModeToggle.addEventListener('click', function() {
   document.body.classList.toggle('dark-mode');
+  // Update localStorage based on the new state.
+  if (document.body.classList.contains('dark-mode')) {
+    localStorage.setItem("dark-mode", "enabled");
+  } else {
+    localStorage.setItem("dark-mode", "disabled");
+  }
 });
