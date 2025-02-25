@@ -1,0 +1,67 @@
+body.tennis {
+  background-color: #1a1aff; /* DodgerBlue */
+  color: #000; /* Gold */
+}
+
+.hero {
+  max-width: 20%;
+}
+
+body.tennis .container {
+  background: #fff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+body.tennis h1,
+body.tennis h4 {
+  display: grid;
+  color: #1a1afa;
+}
+
+/* Override all buttons for tennis theme */
+body.tennis button {
+  background-color: #1a1aff;
+  color: #fff;
+  border: none;
+  padding: 10px 15px;
+  font-size: 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+body.tennis button:hover {
+  background-color: #FFC107; /* slightly different yellow */
+}
+
+body.tennis.dark-mode {
+  background-color: #121212;  /* dark background similar to tackle dark mode */
+  color: #e0e0e0;             /* light text */
+}
+
+body.tennis.dark-mode .container {
+  background: #1e1e1e;
+  box-shadow: 0 4px 8px rgba(255, 255, 255, 0.1);
+}
+
+body.tennis.dark-mode h1,
+body.tennis.dark-mode h4 {
+  color: #e0e0e0;
+}
+
+/* Use the dark mode styling from tackle for buttons */
+body.tennis.dark-mode button {
+  background-color: #1a1afa;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+}
+
+body.tennis.dark-mode button:hover {
+  background-color: #FFC107;
+}
+
+body.dark-mode .container ul li.selected {
+  background-color: #FFC107;
+  color: #1a1afa;
+}

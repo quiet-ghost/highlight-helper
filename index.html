@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Highlight Helper</title>
-  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./styles/styles.css">
 </head>
 <body>
   <div class="container">
@@ -16,9 +16,18 @@
 
     <!-- Input wrapper with text box and reset button -->
     <div class="input-wrapper">
-      <input type="text" id="cartInput" placeholder="Enter cart number" />
-      <button id="resetButton">Reset</button>
-      <button id="darkModeToggle">Dark Mode</button>
+      <div class="controls">
+        <input type="text" id="cartInput" placeholder="Enter cart number" />
+        <button id="resetButton">Reset</button>
+        <button id="darkModeToggle">Dark Mode</button>
+      </div>
+      <!-- Begin Navigation Buttons -->
+      <div class="nav-buttons">
+        <button onclick="window.location.href='index.html'" disabled>Tackle Warehouse</button>
+        <button onclick="window.location.href='Tennis.html'">Tennis Warehouse</button>
+        <button onclick="window.location.href='Running.html'">Running Warehouse</button>
+      </div>
+      <!-- End Navigation Buttons -->
     </div>
 
     <!-- Bulky Section -->
@@ -197,6 +206,6 @@
     </ul>
   </div>
 
-  <script src="./script.js"></script>
+  <script src="./scripts/script.js"></script>
 </body>
 </html>
