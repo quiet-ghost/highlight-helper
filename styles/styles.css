@@ -98,12 +98,13 @@ input#cartInput {
 
 .container ul li {
   border: 2px solid #ccc;
-  padding: 8px;
-  margin-bottom: 4px;
+  padding: 20px;
+  margin-bottom: 8px;
   border-radius: 8px;
   cursor: pointer;
   text-align: center;
   font-weight: bold;
+  font-size: x-large;
 }
 
 .nav-buttons {
