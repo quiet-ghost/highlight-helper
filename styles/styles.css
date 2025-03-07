@@ -104,7 +104,7 @@ input#cartInput {
   cursor: pointer;
   text-align: center;
   font-weight: bold;
-  font-size: x-large;
+  font-size: medium;
 }
 
 .nav-buttons {
