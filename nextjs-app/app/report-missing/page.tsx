@@ -1,11 +1,14 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { PostgrestError } from "@supabase/supabase-js"; // Import Supabase error type
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 import { createPortal } from "react-dom";
 import { saveMissingItem } from "../../lib/missingItems";
 
-export default function ReportMissing() {
+// Component that uses useSearchParams
+function ReportMissingContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const initialPageType = searchParams.get("pageType") || "tackle";
   const [formData, setFormData] = useState({
@@ -20,7 +23,7 @@ export default function ReportMissing() {
     page_type: initialPageType as "tackle" | "tennis" | "running",
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [error, setError] = useState<string | null>(null); // Added error state
+  const [error, setError] = useState<string | null>(null);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -32,6 +35,7 @@ export default function ReportMissing() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      console.log("Submitting formData:", formData);
       await saveMissingItem(formData);
       setFormData({
         initials: "",
@@ -44,12 +48,24 @@ export default function ReportMissing() {
         description: "",
         page_type: formData.page_type,
       });
-      setError(null); // Clear any previous error
+      setError(null);
       setIsModalOpen(true);
-    } catch (err) {
-      console.error("Error submitting missing item:", err);
-      setError("Failed to submit missing item. Please try again.");
+    } catch (err: unknown) {
+      // Narrowing the type inside the block
+      if (err instanceof Error || (err as PostgrestError).message) {
+        const message = (err as PostgrestError | Error).message || "Unknown error";
+        console.error("Submission error:", message);
+        setError(`Failed to submit: ${message}`);
+      } else {
+        console.error("Unexpected error:", err);
+        setError("Failed to submit: An unexpected error occurred");
+      }
     }
+  };
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    router.push(`/${formData.page_type}`);
   };
 
   const modalContent = isModalOpen ? (
@@ -63,6 +79,12 @@ export default function ReportMissing() {
             className="bg-blue-500 text-white px-4 py-2 rounded font-bold hover:bg-blue-600"
           >
             Add Another
+          </button>
+          <button
+            onClick={handleModalClose}
+            className="bg-gray-500 text-white px-4 py-2 rounded font-bold hover:bg-gray-600"
+          >
+            Done
           </button>
         </div>
       </div>
@@ -195,19 +217,19 @@ export default function ReportMissing() {
             <label htmlFor="description" className="block font-bold text-white mb-1">
               Description:
             </label>
-            <input
+            <textarea
               id="description"
               name="description"
               placeholder="Enter a description (optional)"
               value={formData.description}
               onChange={handleChange}
-              className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white placeholder-gray-400"
+              className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white placeholder-gray-400 min-h-[100px]"
             />
           </div>
           <div className="flex justify-end space-x-2">
             <button
               type="submit"
-              className="bg-red-500 text-white px-4 py-2 rounded font-bold hover:bg-red-600"
+              className="bg-blue-500 text-white px-4 py-2 rounded font-bold hover:bg-blue-600"
             >
               Submit
             </button>
@@ -216,5 +238,14 @@ export default function ReportMissing() {
       </div>
       {typeof window !== "undefined" && modalContent && createPortal(modalContent, document.body)}
     </div>
+  );
+}
+
+// Wrapper with Suspense
+export default function ReportMissingPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ReportMissingContent />
+    </Suspense>
   );
 }
