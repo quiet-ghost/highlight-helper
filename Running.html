@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- ...existing head code... -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Highlight Helper Running Warehouse</title>
+  <link rel="stylesheet" href="./styles/styles.css">
+  <link rel="stylesheet" href="./styles/running-theme.css">
+  <!-- ...existing head code... -->
+</head>
+<body class="running">
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <h1>Highlight Helper for Running Warehouse</h1>
+    </header>
+
+    <!-- Input wrapper with text box, reset and dark mode buttons -->
+    <div class="input-wrapper">
+      <div class="controls">
+        <input type="text" id="cartInput" placeholder="Enter cart number" />
+        <button id="resetButton">Reset</button>
+        <button id="darkModeToggle">Dark Mode</button>
+      </div>
+      <!-- Begin Navigation Buttons -->
+      <div class="nav-buttons">
+        <button onclick="window.location.href='index.html'">Tackle Warehouse</button>
+        <button onclick="window.location.href='tennis.html'">Tennis Warehouse</button>
+        <button onclick="window.location.href='Running.html'" disabled>Running Warehouse</button>
+      </div>
+      <!-- End Navigation Buttons -->
+    </div>
+
+    <!-- Running Carts Section -->
+    <h4>Running Carts</h4>
+    <ul id="runningList">
+      <li data-cart="R1">105</li>
+      <li data-cart="R2">110</li>
+      <li data-cart="R3">115</li>
+      <li data-cart="R4">120</li>
+      <li data-cart="R5">125</li>
+      <li data-cart="R6">130</li>
+      <li data-cart="R7">135</li>
+      <li data-cart="R8">140</li>
+      <li data-cart="R9">145</li>
+      <li data-cart="R10">150</li>
+      <li data-cart="R11">165</li>
+      <li data-cart="R12">170</li>
+      <li data-cart="R13">175</li>
+      <li data-cart="R14">180</li>
+      <li data-cart="R15">185</li>
+      <li data-cart="R16">190</li>
+      <li data-cart="R17">195</li>
+      <li data-cart="R18">200</li>
+      <li data-cart="R19">210</li>
+      <li data-cart="R20">215</li>
+      <li data-cart="R21">220</li>
+      <li data-cart="R22">230</li>
+      <li data-cart="R23">235</li>
+      <li data-cart="R24">240</li>
+      <!-- ...add more Running carts as needed... -->
+    </ul>
+    <!-- ...existing code if any... -->
+  </div>
+
+  <script src="./scripts/script.js"></script>
+</body>
+</html>
