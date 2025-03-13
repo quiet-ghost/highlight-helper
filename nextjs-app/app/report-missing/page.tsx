@@ -64,14 +64,14 @@ function ReportMissingContent() {
 
 
   const modalContent = isModalOpen ? (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-sm">
-        <h2 className="text-xl font-bold text-white mb-4">Item Submitted</h2>
-        <p className="text-white mb-4">Missing item reported successfully!</p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="w-full max-w-sm p-6 bg-gray-800 rounded-lg shadow-lg">
+        <h2 className="mb-4 text-xl font-bold text-white">Item Submitted</h2>
+        <p className="mb-4 text-white">Missing item reported successfully!</p>
         <div className="flex justify-end space-x-2">
           <button
             onClick={() => setIsModalOpen(false)}
-            className="bg-blue-500 text-white px-4 py-2 rounded font-bold hover:bg-blue-600"
+            className="px-4 py-2 font-bold text-white bg-blue-500 rounded hover:bg-blue-600"
           >
             Add Another
           </button>
@@ -81,15 +81,15 @@ function ReportMissingContent() {
   ) : null;
 
   return (
-    <div className="container p-5 min-h-screen flex items-center justify-center">
-      <div className="bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-md">
-        <h1 className="text-2xl font-bold text-white mb-4 text-center">
+    <div className="container flex items-center justify-center min-h-screen p-5">
+      <div className="w-full max-w-md p-6 bg-gray-800 rounded-lg shadow-lg">
+        <h1 className="mb-4 text-2xl font-bold text-center text-white">
           Report Missing Items
         </h1>
-        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+        {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label htmlFor="page_type" className="block font-bold text-white mb-1">
+            <label htmlFor="page_type" className="block mb-1 font-bold text-white">
               Warehouse:
             </label>
             <select
@@ -97,7 +97,7 @@ function ReportMissingContent() {
               name="page_type"
               value={formData.page_type}
               onChange={handleChange}
-              className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white"
+              className="w-full p-2 text-white bg-gray-700 border border-gray-600 rounded"
             >
               <option value="tackle">Tackle Warehouse</option>
               <option value="tennis">Tennis Warehouse</option>
@@ -105,7 +105,7 @@ function ReportMissingContent() {
             </select>
           </div>
           <div className="mb-4">
-            <label htmlFor="initials" className="block font-bold text-white mb-1">
+            <label htmlFor="initials" className="block mb-1 font-bold text-white">
               Initials:
             </label>
             <input
@@ -115,11 +115,12 @@ function ReportMissingContent() {
               placeholder="Enter your initials"
               value={formData.initials}
               onChange={handleChange}
-              className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white placeholder-gray-400"
+              className="w-full p-2 text-white placeholder-gray-400 bg-gray-700 border border-gray-600 rounded"
+              required
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="cart_number" className="block font-bold text-white mb-1">
+            <label htmlFor="cart_number" className="block mb-1 font-bold text-white">
               Cart Number:
             </label>
             <input
@@ -129,11 +130,12 @@ function ReportMissingContent() {
               placeholder="Enter cart number"
               value={formData.cart_number}
               onChange={handleChange}
-              className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white placeholder-gray-400"
+              className="w-full p-2 text-white placeholder-gray-400 bg-gray-700 border border-gray-600 rounded"
+              required
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="order_number" className="block font-bold text-white mb-1">
+            <label htmlFor="order_number" className="block mb-1 font-bold text-white">
               Order Number:
             </label>
             <input
@@ -143,11 +145,12 @@ function ReportMissingContent() {
               placeholder="Enter order number"
               value={formData.order_number}
               onChange={handleChange}
-              className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white placeholder-gray-400"
+              className="w-full p-2 text-white placeholder-gray-400 bg-gray-700 border border-gray-600 rounded"
+              required
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="cart_location" className="block font-bold text-white mb-1">
+            <label htmlFor="cart_location" className="block mb-1 font-bold text-white">
               Cart Position:
             </label>
             <input
@@ -157,11 +160,12 @@ function ReportMissingContent() {
               placeholder="Enter cart position"
               value={formData.cart_location}
               onChange={handleChange}
-              className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white placeholder-gray-400"
+              className="w-full p-2 text-white placeholder-gray-400 bg-gray-700 border border-gray-600 rounded"
+              required
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="bin_location" className="block font-bold text-white mb-1">
+            <label htmlFor="bin_location" className="block mb-1 font-bold text-white">
               Bin:
             </label>
             <input
@@ -171,11 +175,12 @@ function ReportMissingContent() {
               placeholder="Enter bin location"
               value={formData.bin_location}
               onChange={handleChange}
-              className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white placeholder-gray-400"
+              className="w-full p-2 text-white placeholder-gray-400 bg-gray-700 border border-gray-600 rounded"
+              required
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="on_hand_qty" className="block font-bold text-white mb-1">
+            <label htmlFor="on_hand_qty" className="block mb-1 font-bold text-white">
               On Hand Quantity:
             </label>
             <input
@@ -185,11 +190,12 @@ function ReportMissingContent() {
               placeholder="Enter on hand quantity"
               value={formData.on_hand_qty}
               onChange={handleChange}
-              className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white placeholder-gray-400"
+              className="w-full p-2 text-white placeholder-gray-400 bg-gray-700 border border-gray-600 rounded"
+              required
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="qty_missing" className="block font-bold text-white mb-1">
+            <label htmlFor="qty_missing" className="block mb-1 font-bold text-white">
               Quantity Missing:
             </label>
             <input
@@ -199,11 +205,12 @@ function ReportMissingContent() {
               placeholder="Enter quantity missing"
               value={formData.qty_missing}
               onChange={handleChange}
-              className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white placeholder-gray-400"
+              className="w-full p-2 text-white placeholder-gray-400 bg-gray-700 border border-gray-600 rounded"
+              required
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="description" className="block font-bold text-white mb-1">
+            <label htmlFor="description" className="block mb-1 font-bold text-white">
               Description:
             </label>
             <textarea
@@ -218,7 +225,7 @@ function ReportMissingContent() {
           <div className="flex justify-end space-x-2">
             <button
               type="submit"
-              className="bg-blue-500 text-white px-4 py-2 rounded font-bold hover:bg-blue-600"
+              className="px-4 py-2 font-bold text-white bg-blue-500 rounded hover:bg-blue-600"
             >
               Submit
             </button>
