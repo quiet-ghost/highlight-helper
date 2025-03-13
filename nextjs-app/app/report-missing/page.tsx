@@ -211,21 +211,22 @@ function ReportMissingContent() {
           </div>
           <div className="mb-4">
             <label htmlFor="description" className="block mb-1 font-bold text-white">
-              Description:
+              Item Description:
             </label>
             <textarea
               id="description"
               name="description"
-              placeholder="Enter a description (optional)"
+              placeholder="Enter item description"
               value={formData.description}
               onChange={handleChange}
               className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white placeholder-gray-400 min-h-[100px]"
+              required
             />
           </div>
           <div className="flex justify-end space-x-2">
             <button
               type="submit"
-              className="px-4 py-2 font-bold text-white bg-blue-500 rounded hover:bg-blue-600"
+              className="px-4 py-2 font-bold text-white bg-red-500 rounded hover:bg-red-600"
             >
               Submit
             </button>
