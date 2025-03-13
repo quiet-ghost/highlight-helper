@@ -1,14 +1,13 @@
 "use client";
 
 import { PostgrestError } from "@supabase/supabase-js"; // Import Supabase error type
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { createPortal } from "react-dom";
 import { saveMissingItem } from "../../lib/missingItems";
 
 // Component that uses useSearchParams
 function ReportMissingContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const initialPageType = searchParams.get("pageType") || "tackle";
   const [formData, setFormData] = useState({
@@ -63,10 +62,6 @@ function ReportMissingContent() {
     }
   };
 
-  const handleModalClose = () => {
-    setIsModalOpen(false);
-    router.push(`/${formData.page_type}`);
-  };
 
   const modalContent = isModalOpen ? (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -79,12 +74,6 @@ function ReportMissingContent() {
             className="bg-blue-500 text-white px-4 py-2 rounded font-bold hover:bg-blue-600"
           >
             Add Another
-          </button>
-          <button
-            onClick={handleModalClose}
-            className="bg-gray-500 text-white px-4 py-2 rounded font-bold hover:bg-gray-600"
-          >
-            Done
           </button>
         </div>
       </div>
