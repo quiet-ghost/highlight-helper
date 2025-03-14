@@ -18,6 +18,9 @@ export default function GlobalNav() {
 
   const currentPageType = getCurrentPageType();
 
+  // Check if we're on a missing items page
+  const isMissingPage = pathname.includes("-missing");
+
   // Map page types to their missing page routes and styles
   const pageMap = {
     tackle: {
@@ -45,7 +48,7 @@ export default function GlobalNav() {
   return (
     <div className="fixed top-4 right-4 flex items-center space-x-2 z-50">
       {/* Show the relevant "Missing" button if on a main page */}
-      {currentPageType && (
+      {currentPageType && !isMissingPage && (
         <Link href={pageMap[currentPageType].missingRoute}>
           <button
             className={`${pageMap[currentPageType].buttonClass} text-white px-4 py-2 rounded font-bold`}
