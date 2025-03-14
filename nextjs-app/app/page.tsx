@@ -79,7 +79,7 @@ export default function Home() {
         </Link>
       </div>
       <p className="mt-6 mb-2 font-sans text-center text-gray-800 dark:text-white">
-        For Highlight Runners (level 3's):
+        For Highlight Runners (level 3 Area):
       </p>
       <div className="flex justify-center mt-4 space-x-4">
         <Link href="/report-missing">

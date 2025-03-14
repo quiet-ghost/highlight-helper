@@ -31,8 +31,8 @@ export default function Controls({
   const currentButtonStyle = buttonStyles[currentPage];
 
   return (
-    <div className="input-wrapper mb-10 grid gap-2 justify-center">
-      <div className="controls flex space-x-4">
+    <div className="grid justify-center gap-2 mb-10 input-wrapper">
+      <div className="flex space-x-4 controls">
         <input
           type="text"
           id="cartInput"
@@ -40,7 +40,7 @@ export default function Controls({
           value={cartInput}
           onChange={onInputChange}
           onKeyDown={onKeyDown}
-          className="w-52 px-2 py-2 text-base border border-gray-300 rounded dark:bg-inherit dark:text-gray-200 dark:border-red-300"
+          className="px-2 py-2 text-base border border-gray-300 rounded w-52 dark:bg-inherit dark:text-gray-200 dark:border-red-300"
         />
         <button
           onClick={onReset}
@@ -56,11 +56,11 @@ export default function Controls({
         </button>
       </div>
 
-      <div className="nav-buttons flex justify-center space-x-4">
+      <div className="flex justify-center space-x-4 nav-buttons">
         {currentPage === "tackle" ? (
           <button
             disabled
-            className="bg-gray-300 text-gray-700 cursor-not-allowed px-4 py-2 rounded font-bold"
+            className="px-4 py-2 font-bold text-gray-700 bg-gray-300 rounded cursor-not-allowed"
           >
             Tackle Warehouse
           </button>
@@ -74,7 +74,7 @@ export default function Controls({
         {currentPage === "tennis" ? (
           <button
             disabled
-            className="bg-gray-300 text-gray-700 cursor-not-allowed px-4 py-2 rounded font-bold"
+            className="px-4 py-2 font-bold text-gray-700 bg-gray-300 rounded cursor-not-allowed"
           >
             Tennis Warehouse
           </button>
@@ -88,7 +88,7 @@ export default function Controls({
         {currentPage === "running" ? (
           <button
             disabled
-            className="bg-gray-300 text-gray-700 cursor-not-allowed px-4 py-2 rounded font-bold"
+            className="px-4 py-2 font-bold text-gray-700 bg-gray-300 rounded cursor-not-allowed"
           >
             Running Warehouse
           </button>
