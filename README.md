@@ -1,18 +1,27 @@
-# Highlight-Helper  
+# Highlight-Helper (Next.js Edition)
 
-## Overview  
-**Highlight-Helper** is a web-based tool designed to enhance navigation through highlights with ease and efficiency.  
+## Overview
 
-This project serves as an essential assistant for operators, integrating seamlessly with in-house software to streamline workflow, reduce workload, and improve overall productivity.  
+**Highlight-Helper (Next.js Edition)** is a web-based tool designed to streamline the reporting and management of missing items for in-house warehouse operations. Initially developed as a navigation aid, this iteration pivots to a specialized solution for Tackle, Tennis, and Running Warehouses, enhancing workflow efficiency and reducing operational strain.
 
-## Features  
-- Simplifies highlight navigation through a direct webpage  
-- Works alongside existing in-house software  
-- Enhances workflow efficiency and reduces operational strain  
+Built as an internal tool for [Your Company Name], it empowers operators to log missing items seamlessly and provides admins with a secure interface to review reports, integrating modern web technologies for a robust user experience.
 
-## Usage  
-Operators can use **Highlight-Helper** as a complementary tool to optimize their daily tasks, making processes smoother and more manageable.  
+## Features
+
+- **Missing Item Reporting**: Operators can submit detailed reports including cart numbers, order numbers, and quantities via an intuitive form.
+- **Warehouse-Specific Functionality**: Supports multiple warehouses (Tackle, Tennis, Running) with dynamic routing.
+- **Admin Dashboard**: Secure access to view and manage reported items.
+- **Efficient Workflow**: Reduces manual effort by integrating with existing warehouse processes.
+
+## Tools & Tech Stack
+
+- **Next.js**: React framework for server-side rendering and static site generation, powering the frontend and routing.
+- **TypeScript**: Adds type safety and improved developer experience to the JavaScript codebase.
+- **Supabase**: Backend-as-a-Service for real-time database storage and authentication, handling missing item data.
+- **React**: Core library for building interactive UI components.
+- **Tailwind CSS**: Utility-first CSS framework for responsive, dark-mode-ready styling.
+- **Vercel**: Deployment platform for hosting and scaling the application.
 
 ---
 
-🔧 *Designed for efficiency.*  
+🔧 _Designed for warehouse efficiency._

@@ -29,55 +29,62 @@ export default function Home() {
 
   return (
     <div className="container p-5">
-      <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-5 text-center">
+      <h1 className="mb-5 text-3xl font-bold text-center text-gray-800 dark:text-white">
         Welcome to Highlight Helper
       </h1>
-      <p className="font-sans text-gray-800 dark:text-white mb-5 text-center">
+      <p className="mb-5 font-sans text-center text-gray-800 dark:text-white">
         Please select a company:
       </p>
-      <div className="flex justify-center space-x-4 mb-4">
+      <div className="flex justify-center mb-4 space-x-4">
         <Link href="/tackle">
-          <button className="bg-red-500 text-white px-4 py-2 rounded font-bold hover:bg-black">
+          <button className="px-4 py-2 font-bold text-white bg-red-500 rounded hover:bg-black">
             Tackle Warehouse
           </button>
         </Link>
         <Link href="/tennis">
-          <button className="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-yellow-500">
+          <button className="px-4 py-2 font-bold text-white bg-blue-600 rounded hover:bg-yellow-500">
             Tennis Warehouse
           </button>
         </Link>
         <Link href="/running">
-          <button className="bg-green-800 text-white px-4 py-2 rounded font-bold hover:bg-green-600">
+          <button className="px-4 py-2 font-bold text-white bg-green-800 rounded hover:bg-green-600">
             Running Warehouse
           </button>
         </Link>
         <button
           onClick={toggleDarkMode}
-          className="bg-gray-700 text-white px-4 py-2 rounded font-bold hover:bg-gray-800"
+          className="px-4 py-2 font-bold text-white bg-gray-700 rounded hover:bg-gray-800"
         >
           {isDarkMode ? "Light Mode" : "Dark Mode"}
         </button>
       </div>
-      <p className="font-sans text-gray-800 dark:text-white mb-5 text-center">
+      <p className="mb-5 font-sans text-center text-gray-800 dark:text-white">
         View missing items (fulfillment only):
       </p>
       <div className="flex justify-center space-x-4">
         <Link href="/tackle-missing">
-          <button className="bg-red-500 text-white px-4 py-2 rounded font-bold hover:bg-black">
+          <button className="px-4 py-2 font-bold text-white bg-red-500 rounded hover:bg-black">
             Tackle Missing
           </button>
         </Link>
         <Link href="/tennis-missing">
-          <button className="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-yellow-500">
+          <button className="px-4 py-2 font-bold text-white bg-blue-600 rounded hover:bg-yellow-500">
             Tennis Missing
           </button>
         </Link>
         <Link href="/running-missing">
-          <button className="bg-green-800 text-white px-4 py-2 rounded font-bold hover:bg-green-600">
+          <button className="px-4 py-2 font-bold text-white bg-green-800 rounded hover:bg-green-600">
             Running Missing
           </button>
         </Link>
       </div>
+      <div className="flex justify-center mt-4 space-x-4">
+        <Link href="/report-missing">
+          <button className="px-4 py-2 font-bold text-black bg-yellow-200 rounded hover:bg-yellow-300">
+            Highlight Searchers
+          </button>
+        </Link>
+        </div>
     </div>
-  );
+);
 }
