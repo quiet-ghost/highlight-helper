@@ -46,6 +46,7 @@ export async function clearMissingItems(pageType: "tackle" | "tennis" | "running
   const { error } = await supabase
     .from("missing_items")
     .delete()
-    .eq("page_type", pageType);
+    .eq("page_type", pageType)
+    .eq("completed", true)
   if (error) throw error;
 }

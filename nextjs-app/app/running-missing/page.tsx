@@ -39,7 +39,7 @@ export default function RunningMissing() {
   };
 
   const handleClearAll = async () => {
-    if (confirm("Are you sure you want to clear all missing items?")) {
+    if (confirm("Are you sure you want to clear the completed missing items? There is no coming back from this...")) {
       await clearMissingItems("running");
     }
   };
@@ -64,7 +64,7 @@ export default function RunningMissing() {
             onClick={handleClearAll}
             className="px-4 py-2 font-bold text-white bg-red-500 rounded hover:bg-red-600"
           >
-            Clear All
+            Clear Completed
           </button>
           <button
             onClick={logout}

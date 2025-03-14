@@ -77,7 +77,7 @@ export default function GlobalNav() {
               <Link key={key} href={missingRoute}>
                 <button
                   className={`${buttonClass} text-white text-sm px-4 py-2 rounded font-bold w-full text-left mb-1`}
-                  onClick={() => setIsMenuOpen(false)} // Close menu on click
+                  onClick={() => setIsMenuOpen(false)}
                 >
                   {label}
                 </button>
