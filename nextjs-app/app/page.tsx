@@ -78,6 +78,9 @@ export default function Home() {
           </button>
         </Link>
       </div>
+      <p className="mt-6 mb-2 font-sans text-center text-gray-800 dark:text-white">
+        For Highlight Runners (level 3's):
+      </p>
       <div className="flex justify-center mt-4 space-x-4">
         <Link href="/report-missing">
           <button className="px-4 py-2 font-bold text-black bg-yellow-300 rounded hover:bg-yellow-400">
