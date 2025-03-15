@@ -7,8 +7,8 @@ export interface MissingItem {
   order_number: string;
   cart_location: string;
   bin_location: string;
-  on_hand_qty: string;
-  qty_missing: string;
+  on_hand_qty: number; 
+  qty_missing: number;
   description?: string;
   page_type: "tackle" | "tennis" | "running";
   timestamp: string;
@@ -47,6 +47,6 @@ export async function clearMissingItems(pageType: "tackle" | "tennis" | "running
     .from("missing_items")
     .delete()
     .eq("page_type", pageType)
-    .eq("completed", true)
+    .eq("completed", true);
   if (error) throw error;
 }

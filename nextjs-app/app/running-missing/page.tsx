@@ -16,37 +16,67 @@ export default function RunningMissing() {
     const darkModeEnabled = localStorage.getItem("dark-mode") === "enabled";
     setIsDarkMode(darkModeEnabled);
 
-    if (isAuthenticated) {
-      getMissingItems("running").then(setMissingItems);
-
-      const channel = supabase
-        .channel("running-missing")
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "missing_items", filter: "page_type=eq.running" },
-          () => getMissingItems("running").then(setMissingItems)
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
+    if (!isAuthenticated) return;
+    
+        // Initial fetch
+        getMissingItems("running").then((items) => setMissingItems(items || []));
+    
+        // Real-time subscription
+        const channel = supabase
+          .channel("running-missing")
+          .on(
+            "postgres_changes",
+            { event: "INSERT", schema: "public", table: "missing_items", filter: "page_type=eq.running" },
+            (payload) => {
+              console.log("INSERT:", payload);
+              setMissingItems((prev) => [...prev, payload.new as MissingItem]);
+            }
+          )
+          .on(
+            "postgres_changes",
+            { event: "UPDATE", schema: "public", table: "missing_items", filter: "page_type=eq.running" },
+            (payload) => {
+              console.log("UPDATE:", payload);
+              setMissingItems((prev) =>
+                prev.map((item) => (item.id === payload.new.id ? (payload.new as MissingItem) : item))
+              );
+            }
+          )
+          .on(
+            "postgres_changes",
+            { event: "DELETE", schema: "public", table: "missing_items", filter: "page_type=eq.running" },
+            (payload) => {
+              console.log("DELETE:", payload);
+              setMissingItems((prev) => {
+                const newItems = prev.filter((item) => item.id !== payload.old.id);
+                console.log("After DELETE, new items:", newItems);
+                return newItems;
+              });
+            }
+          )
+          .subscribe((status) => {
+            console.log("Subscription status:", status);
+          });
+    
+        return () => {
+          supabase.removeChannel(channel);
+        };
+      }, [isAuthenticated]);
+    
+      const handleCompleteChange = async (id: number, completed: boolean) => {
+        await updateMissingItem("running", id, completed);
       };
-    }
-  }, [isAuthenticated]);
-
-  const handleCompleteChange = async (id: number, completed: boolean) => {
-    await updateMissingItem("running", id, completed);
-  };
-
-  const handleClearAll = async () => {
-    if (confirm("Are you sure you want to clear the completed missing items? There is no coming back from this...")) {
-      await clearMissingItems("running");
-    }
-  };
-
-  if (!isAuthenticated) {
-    return <Login onLoginSuccess={() => {}} />;
-  }
+    
+      const handleClearAll = async () => {
+        if (confirm("Are you sure you want to clear the completed missing items? There is no coming back from this...")) {
+          console.log("Clearing completed items...");
+          await clearMissingItems("running");
+        }
+      };
+    
+      if (!isAuthenticated) {
+        return <Login onLoginSuccess={() => {}} />;
+      }
 
   return (
     <div className={`running-theme container p-5 ${isDarkMode ? "dark" : ""}`}>
@@ -100,12 +130,12 @@ export default function RunningMissing() {
                   item.completed ? "bg-gray-300 dark:bg-gray-600 opacity-10" : ""
                 }`}
               >
-                <td className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">{item.initials}</td>
+                <td className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">{item.initials.toUpperCase()}</td>
                 <td className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">{item.description}</td>
                 <td className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">{item.cart_number}</td>
                 <td className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">{item.order_number}</td>
                 <td className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">{item.cart_location}</td>
-                <td className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">{item.bin_location}</td>
+                <td className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">{item.bin_location.toUpperCase()}</td>
                 <td className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">{item.on_hand_qty}</td>
                 <td className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">{item.qty_missing}</td>
                 <td className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">

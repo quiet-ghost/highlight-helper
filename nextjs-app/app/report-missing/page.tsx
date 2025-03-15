@@ -35,7 +35,17 @@ function ReportMissingContent() {
     e.preventDefault();
     try {
       console.log("Submitting formData:", formData);
-      await saveMissingItem(formData);
+      await saveMissingItem({
+        initials: formData.initials,
+        cart_number: formData.cart_number,
+        order_number: formData.order_number,
+        cart_location: formData.cart_location,
+        bin_location: formData.bin_location,
+        on_hand_qty: parseInt(formData.on_hand_qty) || 0, // Parse to number
+        qty_missing: parseInt(formData.qty_missing) || 0, // Parse to number
+        description: formData.description || undefined, // Handle optional field
+        page_type: formData.page_type,
+      });
       setFormData({
         initials: "",
         cart_number: "",
@@ -115,7 +125,7 @@ function ReportMissingContent() {
               placeholder="Enter your initials"
               value={formData.initials}
               onChange={handleChange}
-              className="w-full p-2 text-white placeholder-gray-400 bg-gray-700 border border-gray-600 rounded"
+              className="w-full p-2 text-white placeholder-gray-400 uppercase bg-gray-700 border border-gray-600 rounded"
               required
             />
           </div>
@@ -175,7 +185,7 @@ function ReportMissingContent() {
               placeholder="Enter bin location"
               value={formData.bin_location}
               onChange={handleChange}
-              className="w-full p-2 text-white placeholder-gray-400 bg-gray-700 border border-gray-600 rounded"
+              className="w-full p-2 text-white placeholder-gray-400 uppercase bg-gray-700 border border-gray-600 rounded"
               required
             />
           </div>
