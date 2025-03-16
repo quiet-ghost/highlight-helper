@@ -81,7 +81,7 @@ export default function RunningMissing() {
   return (
     <div className={`running-theme container p-5 ${isDarkMode ? "dark" : ""}`}>
       <h1 className="mb-5 text-3xl font-bold text-center text-black dark:text-white">
-        Tackle Warehouse Missing Items
+        Running Warehouse Missing Items
       </h1>
       <div className="flex justify-between mb-4">
         <Link href="/running">
