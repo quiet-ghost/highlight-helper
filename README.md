@@ -2,14 +2,13 @@
 
 ## Overview
 
-**Highlight-Helper (Next.js Edition)** is a web-based tool designed to streamline the reporting and management of missing items for in-house warehouse operations. Initially developed as a navigation aid, this iteration pivots to a specialized solution for Tackle, Tennis, and Running Warehouses, enhancing workflow efficiency and reducing operational strain.
+**Highlight-Helper (Next.js Edition)** is a web-based tool designed to streamline the reporting and management of missing items for in-house warehouse operations. Initially developed as a navigation aid, this iteration pivots to a specialized solution amd enhancing workflow efficiency and reducing operational strain.
 
-Built as an internal tool for [Your Company Name], it empowers operators to log missing items seamlessly and provides admins with a secure interface to review reports, integrating modern web technologies for a robust user experience.
+This tool empowers operators to log missing items seamlessly and provides admins with a secure interface to review reports, integrating modern web technologies for a robust user experience.
 
 ## Features
 
 - **Missing Item Reporting**: Operators can submit detailed reports including cart numbers, order numbers, and quantities via an intuitive form.
-- **Warehouse-Specific Functionality**: Supports multiple warehouses (Tackle, Tennis, Running) with dynamic routing.
 - **Admin Dashboard**: Secure access to view and manage reported items.
 - **Efficient Workflow**: Reduces manual effort by integrating with existing warehouse processes.
 
@@ -24,4 +23,4 @@ Built as an internal tool for [Your Company Name], it empowers operators to log 
 
 ---
 
-🔧 _Designed for warehouse efficiency._
+🔧 _Designed for efficiency._
