@@ -1,0 +1,121 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base styles from styles.css (Tackle Warehouse) */
+body {
+  font-family: Arial, sans-serif;
+  background-color: #1a1a1a;
+}
+
+/* Container styles */
+.container {
+  margin: 0 auto;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Grid layout for lists */
+.container ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 10px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* List items */
+.container ul li {
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: bold;
+  font-size: medium;
+}
+
+/* Tackle Warehouse Theme */
+.tackle-theme {
+  background-color: #ffffff;
+}
+
+.tackle-theme .container {
+  background: #fff;
+}
+
+.tackle-theme .selected {
+  background-color: #1a1a1a;
+  color: #fff;
+}
+
+
+/* Tennis Warehouse Theme */
+.tennis-theme {
+  background-color: #fff;
+}
+
+.tennis-theme .container {
+  background: #fff;
+}
+.tennis-theme .selected {
+  background-color: #1a1a1a;
+  color: #fff;
+}
+
+
+
+/* Running Warehouse Theme */
+.running-theme {
+  background-color: #fff; 
+}
+
+.running-theme .container {
+  background: #fff;
+}
+
+.running-theme .selected {
+  background-color: #1a1a1a;
+  color: #fff;
+}
+
+/* Dark Mode Styles */
+.dark {
+  background-color: #121212;
+  color: #e0e0e0;
+}
+
+.dark .container {
+  background: #1e1e1e;
+  box-shadow: 0 4px 8px rgba(255, 255, 255, 0.1);
+}
+
+.dark.tackle-theme .container ul li.selected {
+  background-color: #f00;
+  color: #fff;
+}
+
+.dark.tennis-theme .container ul li.selected {
+  background-color: #FFC107;
+  color: #fff;
+}
+
+.dark.running-theme .container ul li.selected {
+  background-color: #0f3d0f;
+  color: #fff;
+}
+
+/* Responsive Design */
+@media (max-width: 1080px) {
+  .container {
+    width: 100%;
+  }
+  .container ul li {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 1080px) {
+  .container {
+    max-width: 100%;
+  }
+}
