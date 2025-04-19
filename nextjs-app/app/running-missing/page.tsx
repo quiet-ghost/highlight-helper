@@ -10,6 +10,8 @@ import { supabase } from "../../lib/supabaseClient";
 export default function RunningMissing() {
   const [missingItems, setMissingItems] = useState<MissingItem[]>([]);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [sortField, setSortField] = useState<keyof MissingItem | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const { isAuthenticated, logout } = useAuth();
 
   useEffect(() => {
@@ -74,6 +76,36 @@ export default function RunningMissing() {
         }
       };
     
+      const handleSort = (field: keyof MissingItem) => {
+        if (sortField === field) {
+          setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+        } else {
+          setSortField(field);
+          setSortDirection('asc');
+        }
+      };
+    
+      const getSortedItems = () => {
+        if (!sortField) return missingItems;
+    
+        return [...missingItems].sort((a, b) => {
+          const aValue = a[sortField];
+          const bValue = b[sortField];
+    
+          if (aValue === null || aValue === undefined) return 1;
+          if (bValue === null || bValue === undefined) return -1;
+    
+          let comparison = 0;
+          if (typeof aValue === 'string' && typeof bValue === 'string') {
+            comparison = aValue.localeCompare(bValue);
+          } else {
+            comparison = aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+          }
+    
+          return sortDirection === 'asc' ? comparison : -comparison;
+        });
+      };
+    
       if (!isAuthenticated) {
         return <Login onLoginSuccess={() => {}} />;
       }
@@ -110,20 +142,35 @@ export default function RunningMissing() {
         <table className="w-full border-collapse">
           <thead>
             <tr className="bg-gray-200 dark:bg-gray-700">
-              <th className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">Initials</th>
-              <th className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">Item Description</th>
-              <th className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">Cart #</th>
-              <th className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">Order #</th>
-              <th className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">Cart Pos</th>
-              <th className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">Bin</th>
-              <th className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">On Hand</th>
-              <th className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">Qty Missing</th>
-              <th className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">Timestamp</th>
-              <th className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">Complete</th>
+              {[
+                { key: 'initials', label: 'Initials' },
+                { key: 'description', label: 'Item Description' },
+                { key: 'cart_number', label: 'Cart #' },
+                { key: 'order_number', label: 'Order #' },
+                { key: 'cart_location', label: 'Cart Pos' },
+                { key: 'bin_location', label: 'Bin' },
+                { key: 'on_hand_qty', label: 'On Hand' },
+                { key: 'qty_missing', label: 'Qty Missing' },
+                { key: 'timestamp', label: 'Timestamp' },
+                { key: 'completed', label: 'Complete' }
+              ].map(({ key, label }) => (
+                <th
+                  key={key}
+                  onClick={() => key !== 'completed' && handleSort(key as keyof MissingItem)}
+                  className={`p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600 ${
+                    key !== 'completed' ? 'cursor-pointer hover:bg-gray-300 dark:hover:bg-gray-600' : ''
+                  }`}
+                >
+                  {label}
+                  {sortField === key && (
+                    <span className="ml-2">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                  )}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
-            {missingItems.map((item) => (
+            {getSortedItems().map((item) => (
               <tr
                 key={item.id}
                 className={`even:bg-gray-100 dark:even:bg-gray-800 ${
