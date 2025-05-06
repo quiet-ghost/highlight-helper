@@ -115,7 +115,7 @@ function ReportMissingContent() {
               onChange={handleChange}
               className="w-full p-2 text-white bg-gray-700 border border-gray-600 rounded"
             >
-              <option value="default">-- Select a Company --</option>
+              <option value="default" disabled>-- Select a Company --</option>
               <option value="tackle">Tackle Warehouse</option>
               <option value="tennis">Tennis Warehouse</option>
               <option value="running">Running Warehouse</option>
