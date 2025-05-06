@@ -9,7 +9,7 @@ import { saveMissingItem } from "../../lib/missingItems";
 // Component that uses useSearchParams
 function ReportMissingContent() {
   const searchParams = useSearchParams();
-  const initialPageType = searchParams.get("pageType") || "tackle";
+  const initialPageType = searchParams.get("pageType") || "default";
   const [formData, setFormData] = useState({
     initials: "",
     cart_number: "",
@@ -25,7 +25,9 @@ function ReportMissingContent() {
   const [error, setError] = useState<string | null>(null);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -62,7 +64,8 @@ function ReportMissingContent() {
     } catch (err: unknown) {
       // Narrowing the type inside the block
       if (err instanceof Error || (err as PostgrestError).message) {
-        const message = (err as PostgrestError | Error).message || "Unknown error";
+        const message =
+          (err as PostgrestError | Error).message || "Unknown error";
         console.error("Submission error:", message);
         setError(`Failed to submit: ${message}`);
       } else {
@@ -71,7 +74,6 @@ function ReportMissingContent() {
       }
     }
   };
-
 
   const modalContent = isModalOpen ? (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
@@ -99,23 +101,31 @@ function ReportMissingContent() {
         {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label htmlFor="page_type" className="block mb-1 font-bold text-white">
+            <label
+              htmlFor="page_type"
+              className="block mb-1 font-bold text-white"
+            >
               Warehouse:
             </label>
             <select
               id="page_type"
               name="page_type"
+              required
               value={formData.page_type}
               onChange={handleChange}
               className="w-full p-2 text-white bg-gray-700 border border-gray-600 rounded"
             >
+              <option value="default">-- Select a Company --</option>
               <option value="tackle">Tackle Warehouse</option>
               <option value="tennis">Tennis Warehouse</option>
               <option value="running">Running Warehouse</option>
             </select>
           </div>
           <div className="mb-4">
-            <label htmlFor="initials" className="block mb-1 font-bold text-white">
+            <label
+              htmlFor="initials"
+              className="block mb-1 font-bold text-white"
+            >
               Initials:
             </label>
             <input
@@ -130,7 +140,10 @@ function ReportMissingContent() {
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="cart_number" className="block mb-1 font-bold text-white">
+            <label
+              htmlFor="cart_number"
+              className="block mb-1 font-bold text-white"
+            >
               Cart Number:
             </label>
             <input
@@ -145,7 +158,10 @@ function ReportMissingContent() {
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="order_number" className="block mb-1 font-bold text-white">
+            <label
+              htmlFor="order_number"
+              className="block mb-1 font-bold text-white"
+            >
               Order Number:
             </label>
             <input
@@ -160,7 +176,10 @@ function ReportMissingContent() {
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="cart_location" className="block mb-1 font-bold text-white">
+            <label
+              htmlFor="cart_location"
+              className="block mb-1 font-bold text-white"
+            >
               Cart Position:
             </label>
             <input
@@ -175,7 +194,10 @@ function ReportMissingContent() {
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="bin_location" className="block mb-1 font-bold text-white">
+            <label
+              htmlFor="bin_location"
+              className="block mb-1 font-bold text-white"
+            >
               Bin:
             </label>
             <input
@@ -190,7 +212,10 @@ function ReportMissingContent() {
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="on_hand_qty" className="block mb-1 font-bold text-white">
+            <label
+              htmlFor="on_hand_qty"
+              className="block mb-1 font-bold text-white"
+            >
               On Hand Quantity:
             </label>
             <input
@@ -205,7 +230,10 @@ function ReportMissingContent() {
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="qty_missing" className="block mb-1 font-bold text-white">
+            <label
+              htmlFor="qty_missing"
+              className="block mb-1 font-bold text-white"
+            >
               Quantity Missing:
             </label>
             <input
@@ -220,7 +248,10 @@ function ReportMissingContent() {
             />
           </div>
           <div className="mb-4">
-            <label htmlFor="description" className="block mb-1 font-bold text-white">
+            <label
+              htmlFor="description"
+              className="block mb-1 font-bold text-white"
+            >
               Item Description:
             </label>
             <textarea
@@ -243,7 +274,9 @@ function ReportMissingContent() {
           </div>
         </form>
       </div>
-      {typeof window !== "undefined" && modalContent && createPortal(modalContent, document.body)}
+      {typeof window !== "undefined" &&
+        modalContent &&
+        createPortal(modalContent, document.body)}
     </div>
   );
 }
