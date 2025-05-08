@@ -15,7 +15,6 @@ export interface MissingItem {
   completed: boolean;
   on_cart: boolean;
   looked_for: boolean;
-  notes: string;
 }
 
 export async function saveMissingItem(item: Omit<MissingItem, "id" | "timestamp" | "completed">) {

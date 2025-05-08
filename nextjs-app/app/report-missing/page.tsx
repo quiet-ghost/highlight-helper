@@ -43,10 +43,12 @@ function ReportMissingContent() {
         order_number: formData.order_number,
         cart_location: formData.cart_location,
         bin_location: formData.bin_location,
-        on_hand_qty: parseInt(formData.on_hand_qty) || 0, // Parse to number
-        qty_missing: parseInt(formData.qty_missing) || 0, // Parse to number
-        description: formData.description || undefined, // Handle optional field
+        on_hand_qty: parseInt(formData.on_hand_qty) || 0,
+        qty_missing: parseInt(formData.qty_missing) || 0,
+        description: formData.description || undefined,
         page_type: formData.page_type,
+        on_cart: false,
+        looked_for: false,
       });
       setFormData({
         initials: "",
