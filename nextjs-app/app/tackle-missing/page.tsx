@@ -66,7 +66,7 @@ export default function TackleMissing() {
   }, [isAuthenticated]);
 
   const handleCompleteChange = async (id: number, completed: boolean) => {
-    await updateMissingItem("tackle", id, completed);
+    await updateMissingItem("tackle", id, { completed });
   };
 
   const handleClearAll = async () => {
