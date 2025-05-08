@@ -66,7 +66,15 @@ export default function TennisMissing() {
       }, [isAuthenticated]);
     
       const handleCompleteChange = async (id: number, completed: boolean) => {
-        await updateMissingItem("tennis", id, completed);
+        await updateMissingItem("tennis", id, { completed });
+      };
+    
+      const handleChecked1Change = async (id: number, checked: boolean) => {
+        await updateMissingItem("tennis", id, { on_cart: checked });
+      };
+    
+      const handleChecked2Change = async (id: number, checked: boolean) => {
+        await updateMissingItem("tennis", id, { looked_for: checked });
       };
     
       const handleClearAll = async () => {
@@ -152,7 +160,9 @@ export default function TennisMissing() {
                 { key: 'on_hand_qty', label: 'On Hand' },
                 { key: 'qty_missing', label: 'Qty Missing' },
                 { key: 'timestamp', label: 'Timestamp' },
-                { key: 'completed', label: 'Complete' }
+                { key: 'completed', label: 'Complete' },
+                { key: 'on_cart', label: 'On Cart' },
+                { key: 'looked_for', label: 'Looked For' },
               ].map(({ key, label }) => (
                 <th
                   key={key}
@@ -173,8 +183,14 @@ export default function TennisMissing() {
             {getSortedItems().map((item) => (
               <tr
                 key={item.id}
-                className={`even:bg-gray-100 dark:even:bg-gray-800 ${
-                  item.completed ? "bg-gray-300 dark:bg-gray-600 opacity-10" : ""
+                className={`${
+                  item.completed 
+                    ? "bg-gray-300 dark:bg-gray-600 opacity-10" 
+                    : item.on_cart 
+                      ? "bg-blue-100 dark:bg-green-900" 
+                      : item.looked_for 
+                        ? "bg-green-100 dark:bg-blue-900"
+                        : "even:bg-gray-100 dark:even:bg-gray-800"
                 }`}
               >
                 <td className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">{item.initials.toUpperCase()}</td>
@@ -193,6 +209,20 @@ export default function TennisMissing() {
                     type="checkbox"
                     checked={item.completed || false}
                     onChange={(e) => handleCompleteChange(item.id, e.target.checked)}
+                  />
+                </td>
+                <td className="p-2 text-center text-black border border-gray-300 dark:text-white dark:border-gray-600">
+                  <input
+                    type="checkbox"
+                    checked={item.on_cart || false}
+                    onChange={(e) => handleChecked1Change(item.id, e.target.checked)}
+                  />
+                </td>
+                <td className="p-2 text-center text-black border border-gray-300 dark:text-white dark:border-gray-600">
+                  <input
+                    type="checkbox"
+                    checked={item.looked_for || false}
+                    onChange={(e) => handleChecked2Change(item.id, e.target.checked)}
                   />
                 </td>
               </tr>

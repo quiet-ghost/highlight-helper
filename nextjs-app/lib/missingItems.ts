@@ -13,6 +13,9 @@ export interface MissingItem {
   page_type: "tackle" | "tennis" | "running";
   timestamp: string;
   completed: boolean;
+  on_cart: boolean;
+  looked_for: boolean;
+  notes: string;
 }
 
 export async function saveMissingItem(item: Omit<MissingItem, "id" | "timestamp" | "completed">) {
@@ -33,10 +36,14 @@ export async function getMissingItems(pageType: "tackle" | "tennis" | "running")
   return data || [];
 }
 
-export async function updateMissingItem(pageType: "tackle" | "tennis" | "running", id: number, completed: boolean) {
+export async function updateMissingItem(
+  pageType: "tackle" | "tennis" | "running", 
+  id: number, 
+  updates: Partial<MissingItem>
+) {
   const { error } = await supabase
     .from("missing_items")
-    .update({ completed })
+    .update(updates)
     .eq("id", id)
     .eq("page_type", pageType);
   if (error) throw error;
