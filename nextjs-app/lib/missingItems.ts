@@ -7,7 +7,7 @@ export interface MissingItem {
   order_number: string;
   cart_location: string;
   bin_location: string;
-  on_hand_qty: number; 
+  on_hand_qty: number;
   qty_missing: number;
   description?: string;
   page_type: "tackle" | "tennis" | "running";
@@ -15,17 +15,26 @@ export interface MissingItem {
   completed: boolean;
   on_cart: boolean;
   looked_for: boolean;
+  fulf_1: boolean;
+  fulf_2: boolean;
 }
 
-export async function saveMissingItem(item: Omit<MissingItem, "id" | "timestamp" | "completed">) {
-  const { data: { session }, error: authError } = await supabase.auth.getSession();
+export async function saveMissingItem(
+  item: Omit<MissingItem, "id" | "timestamp" | "completed">,
+) {
+  const {
+    data: { session },
+    error: authError,
+  } = await supabase.auth.getSession();
   console.log("Session:", session);
   if (authError) throw authError;
   const { error } = await supabase.from("missing_items").insert([item]);
   if (error) throw error;
 }
 
-export async function getMissingItems(pageType: "tackle" | "tennis" | "running"): Promise<MissingItem[]> {
+export async function getMissingItems(
+  pageType: "tackle" | "tennis" | "running",
+): Promise<MissingItem[]> {
   const { data, error } = await supabase
     .from("missing_items")
     .select("*")
@@ -36,9 +45,9 @@ export async function getMissingItems(pageType: "tackle" | "tennis" | "running")
 }
 
 export async function updateMissingItem(
-  pageType: "tackle" | "tennis" | "running", 
-  id: number, 
-  updates: Partial<MissingItem>
+  pageType: "tackle" | "tennis" | "running",
+  id: number,
+  updates: Partial<MissingItem>,
 ) {
   const { error } = await supabase
     .from("missing_items")
@@ -48,7 +57,9 @@ export async function updateMissingItem(
   if (error) throw error;
 }
 
-export async function clearMissingItems(pageType: "tackle" | "tennis" | "running") {
+export async function clearMissingItems(
+  pageType: "tackle" | "tennis" | "running",
+) {
   const { error } = await supabase
     .from("missing_items")
     .delete()

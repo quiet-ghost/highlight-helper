@@ -4,14 +4,19 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import Login from "../../components/Login";
 import { useAuth } from "../../lib/authContext";
-import { clearMissingItems, getMissingItems, MissingItem, updateMissingItem } from "../../lib/missingItems";
+import {
+  clearMissingItems,
+  getMissingItems,
+  MissingItem,
+  updateMissingItem,
+} from "../../lib/missingItems";
 import { supabase } from "../../lib/supabaseClient";
 
 export default function TackleMissing() {
   const [missingItems, setMissingItems] = useState<MissingItem[]>([]);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [sortField, setSortField] = useState<keyof MissingItem | null>(null);
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const { isAuthenticated, logout } = useAuth();
 
   useEffect(() => {
@@ -28,25 +33,42 @@ export default function TackleMissing() {
       .channel("tackle-missing")
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "missing_items", filter: "page_type=eq.tackle" },
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "missing_items",
+          filter: "page_type=eq.tackle",
+        },
         (payload) => {
           console.log("INSERT:", payload);
           setMissingItems((prev) => [...prev, payload.new as MissingItem]);
-        }
+        },
       )
       .on(
         "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "missing_items", filter: "page_type=eq.tackle" },
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "missing_items",
+          filter: "page_type=eq.tackle",
+        },
         (payload) => {
           console.log("UPDATE:", payload);
           setMissingItems((prev) =>
-            prev.map((item) => (item.id === payload.new.id ? (payload.new as MissingItem) : item))
+            prev.map((item) =>
+              item.id === payload.new.id ? (payload.new as MissingItem) : item,
+            ),
           );
-        }
+        },
       )
       .on(
         "postgres_changes",
-        { event: "DELETE", schema: "public", table: "missing_items", filter: "page_type=eq.tackle" },
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "missing_items",
+          filter: "page_type=eq.tackle",
+        },
         (payload) => {
           console.log("DELETE:", payload);
           setMissingItems((prev) => {
@@ -54,7 +76,7 @@ export default function TackleMissing() {
             console.log("After DELETE, new items:", newItems);
             return newItems;
           });
-        }
+        },
       )
       .subscribe((status) => {
         console.log("Subscription status:", status);
@@ -69,8 +91,20 @@ export default function TackleMissing() {
     await updateMissingItem("tackle", id, { completed });
   };
 
+  const handleChecked1Change = async (id: number, checked: boolean) => {
+    await updateMissingItem("tackle", id, { fulf_1: checked });
+  };
+
+  const handleChecked2Change = async (id: number, checked: boolean) => {
+    await updateMissingItem("tackle", id, { fulf_2: checked });
+  };
+
   const handleClearAll = async () => {
-    if (confirm("Are you sure you want to clear the completed missing items? There is no coming back from this...")) {
+    if (
+      confirm(
+        "Are you sure you want to clear the completed missing items? There is no coming back from this...",
+      )
+    ) {
       console.log("Clearing completed items...");
       await clearMissingItems("tackle");
     }
@@ -78,10 +112,10 @@ export default function TackleMissing() {
 
   const handleSort = (field: keyof MissingItem) => {
     if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
       setSortField(field);
-      setSortDirection('asc');
+      setSortDirection("asc");
     }
   };
 
@@ -96,13 +130,18 @@ export default function TackleMissing() {
       if (bValue === null) return -1;
 
       let comparison = 0;
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
+      if (typeof aValue === "string" && typeof bValue === "string") {
         comparison = aValue.localeCompare(bValue);
       } else {
-        comparison = (aValue ?? 0) < (bValue ?? 0) ? -1 : (aValue ?? 0) > (bValue ?? 0) ? 1 : 0;
+        comparison =
+          (aValue ?? 0) < (bValue ?? 0)
+            ? -1
+            : (aValue ?? 0) > (bValue ?? 0)
+              ? 1
+              : 0;
       }
 
-      return sortDirection === 'asc' ? comparison : -comparison;
+      return sortDirection === "asc" ? comparison : -comparison;
     });
   };
 
@@ -137,33 +176,43 @@ export default function TackleMissing() {
         </div>
       </div>
       {missingItems.length === 0 ? (
-        <p className="text-center text-black dark:text-white">No missing items reported yet.</p>
+        <p className="text-center text-black dark:text-white">
+          No missing items reported yet.
+        </p>
       ) : (
         <table className="w-full border-collapse">
           <thead>
             <tr className="bg-gray-200 dark:bg-gray-700">
               {[
-                { key: 'initials', label: 'Initials' },
-                { key: 'description', label: 'Item Description' },
-                { key: 'cart_number', label: 'Cart #' },
-                { key: 'order_number', label: 'Order #' },
-                { key: 'cart_location', label: 'Cart Pos' },
-                { key: 'bin_location', label: 'Bin' },
-                { key: 'on_hand_qty', label: 'On Hand' },
-                { key: 'qty_missing', label: 'Qty Missing' },
-                { key: 'timestamp', label: 'Timestamp' },
-                { key: 'completed', label: 'Complete' }
+                { key: "initials", label: "Initials" },
+                { key: "description", label: "Item Description" },
+                { key: "cart_number", label: "Cart #" },
+                { key: "order_number", label: "Order #" },
+                { key: "cart_location", label: "Cart Pos" },
+                { key: "bin_location", label: "Bin" },
+                { key: "on_hand_qty", label: "On Hand" },
+                { key: "qty_missing", label: "Qty Missing" },
+                { key: "timestamp", label: "Timestamp" },
+                { key: "completed", label: "Complete" },
+                { key: "fulf_1", label: "Fulf #1" },
+                { key: "fulf_2", label: "Fulf #2" },
               ].map(({ key, label }) => (
                 <th
                   key={key}
-                  onClick={() => key !== 'completed' && handleSort(key as keyof MissingItem)}
+                  onClick={() =>
+                    key !== "completed" && handleSort(key as keyof MissingItem)
+                  }
                   className={`p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600 ${
-                    key !== 'completed' ? 'cursor-pointer hover:bg-gray-300 dark:hover:bg-gray-600' : ''
+                    key !== "completed"
+                      ? "cursor-pointer hover:bg-gray-300 dark:hover:bg-gray-600"
+                      : ""
                   }`}
                 >
                   {label}
                   {sortField === key && (
-                    <span className="ml-2">{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                    <span className="ml-2">
+                      {sortDirection === "asc" ? "↑" : "↓"}
+                    </span>
                   )}
                 </th>
               ))}
@@ -173,18 +222,40 @@ export default function TackleMissing() {
             {getSortedItems().map((item) => (
               <tr
                 key={item.id}
-                className={`even:bg-gray-100 dark:even:bg-gray-800 ${
-                  item.completed ? "bg-gray-300 dark:bg-gray-600 opacity-10" : ""
+                className={`${
+                  item.completed
+                    ? "bg-gray-300 dark:bg-gray-600 opacity-10"
+                    : item.fulf_1
+                      ? "bg-blue-100 dark:bg-red-400"
+                      : item.fulf_2
+                        ? "bg-green-100 dark:bg-blue-900"
+                        : "even:bg-gray-100 dark:even:bg-gray-800"
                 }`}
               >
-                <td className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">{item.initials.toUpperCase()}</td>
-                <td className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">{item.description}</td>
-                <td className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">{item.cart_number}</td>
-                <td className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">{item.order_number}</td>
-                <td className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">{item.cart_location}</td>
-                <td className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">{item.bin_location.toUpperCase()}</td>
-                <td className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">{item.on_hand_qty}</td>
-                <td className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">{item.qty_missing}</td>
+                <td className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">
+                  {item.initials.toUpperCase()}
+                </td>
+                <td className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">
+                  {item.description}
+                </td>
+                <td className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">
+                  {item.cart_number}
+                </td>
+                <td className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">
+                  {item.order_number}
+                </td>
+                <td className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">
+                  {item.cart_location}
+                </td>
+                <td className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">
+                  {item.bin_location.toUpperCase()}
+                </td>
+                <td className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">
+                  {item.on_hand_qty}
+                </td>
+                <td className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">
+                  {item.qty_missing}
+                </td>
                 <td className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600">
                   {new Date(item.timestamp).toLocaleString()}
                 </td>
@@ -192,7 +263,27 @@ export default function TackleMissing() {
                   <input
                     type="checkbox"
                     checked={item.completed || false}
-                    onChange={(e) => handleCompleteChange(item.id, e.target.checked)}
+                    onChange={(e) =>
+                      handleCompleteChange(item.id, e.target.checked)
+                    }
+                  />
+                </td>
+                <td className="p-2 text-center text-black border border-gray-300 dark:text-white dark:border-gray-600">
+                  <input
+                    type="checkbox"
+                    checked={item.fulf_1 || false}
+                    onChange={(e) =>
+                      handleChecked1Change(item.id, e.target.checked)
+                    }
+                  />
+                </td>
+                <td className="p-2 text-center text-black border border-gray-300 dark:text-white dark:border-gray-600">
+                  <input
+                    type="checkbox"
+                    checked={item.fulf_2 || false}
+                    onChange={(e) =>
+                      handleChecked2Change(item.id, e.target.checked)
+                    }
                   />
                 </td>
               </tr>
