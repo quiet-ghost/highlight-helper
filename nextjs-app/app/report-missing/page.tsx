@@ -49,6 +49,8 @@ function ReportMissingContent() {
         page_type: formData.page_type,
         on_cart: false,
         looked_for: false,
+        fulf_1: false,
+        fulf_2: false,
       });
       setFormData({
         initials: "",
@@ -117,7 +119,9 @@ function ReportMissingContent() {
               onChange={handleChange}
               className="w-full p-2 text-white bg-gray-700 border border-gray-600 rounded"
             >
-              <option value="default" disabled>-- Select a Company --</option>
+              <option value="default" disabled>
+                -- Select a Company --
+              </option>
               <option value="tackle">Tackle Warehouse</option>
               <option value="tennis">Tennis Warehouse</option>
               <option value="running">Running Warehouse</option>
