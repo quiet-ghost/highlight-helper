@@ -5,6 +5,10 @@
 /* Base styles from styles.css (Tackle Warehouse) */
 body {
   font-family: Arial, sans-serif;
+  background-color: #ffffff;
+}
+
+.dark body {
   background-color: #1a1a1a;
 }
 
@@ -48,6 +52,13 @@ body {
   color: #fff;
 }
 
+.dark .tackle-theme {
+  background-color: #1a1a1a;
+}
+
+.dark .tackle-theme .container {
+  background: #1e1e1e;
+}
 
 /* Tennis Warehouse Theme */
 .tennis-theme {
@@ -62,7 +73,13 @@ body {
   color: #fff;
 }
 
+.dark .tennis-theme {
+  background-color: #1a1a1a;
+}
 
+.dark .tennis-theme .container {
+  background: #1e1e1e;
+}
 
 /* Running Warehouse Theme */
 .running-theme {
@@ -76,6 +93,14 @@ body {
 .running-theme .selected {
   background-color: #1a1a1a;
   color: #fff;
+}
+
+.dark .running-theme {
+  background-color: #1a1a1a;
+}
+
+.dark .running-theme .container {
+  background: #1e1e1e;
 }
 
 /* Dark Mode Styles */

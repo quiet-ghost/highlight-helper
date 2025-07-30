@@ -21,10 +21,18 @@ export default function Tackle() {
   const [bulkyList, setBulkyList] = useState<CartItem[]>(initialBulkyList);
   const [smallsList, setSmallsList] = useState<CartItem[]>(initialSmallsList);
   const [hugeList, setHugeList] = useState<CartItem[]>(initialHugeList);
-  const [rodCartsList, setRodCartsList] = useState<CartItem[]>(initialRodCartsList);
-  const [rodBoxesList, setRodBoxesList] = useState<CartItem[]>(initialRodBoxesList);
+  const [rodCartsList, setRodCartsList] =
+    useState<CartItem[]>(initialRodCartsList);
+  const [rodBoxesList, setRodBoxesList] =
+    useState<CartItem[]>(initialRodBoxesList);
 
-  const allLists = [bulkyList, smallsList, hugeList, rodCartsList, rodBoxesList];
+  const allLists = [
+    bulkyList,
+    smallsList,
+    hugeList,
+    rodCartsList,
+    rodBoxesList,
+  ];
   const setAllLists = [
     setBulkyList,
     setSmallsList,
@@ -36,6 +44,9 @@ export default function Tackle() {
   useEffect(() => {
     const darkModeEnabled = localStorage.getItem("dark-mode") === "enabled";
     setIsDarkMode(darkModeEnabled);
+    if (darkModeEnabled) {
+      document.documentElement.classList.add("dark");
+    }
     setMounted(true);
   }, []);
 
@@ -51,7 +62,7 @@ export default function Tackle() {
                 return { ...item, count: item.count + 1 };
               }
               return item;
-            })
+            }),
           );
         });
         setCartInput("");
@@ -62,28 +73,28 @@ export default function Tackle() {
   const handleItemClick = (listIndex: number, itemId: string) => {
     setAllLists[listIndex]((prevList) =>
       prevList.map((item) =>
-        item.id === itemId ? { ...item, count: item.count + 1 } : item
-      )
+        item.id === itemId ? { ...item, count: item.count + 1 } : item,
+      ),
     );
   };
 
   const handleContextMenu = (
     e: React.MouseEvent<HTMLLIElement>,
     listIndex: number,
-    itemId: string
+    itemId: string,
   ) => {
     e.preventDefault();
     setAllLists[listIndex]((prevList) =>
       prevList.map((item) =>
-        item.id === itemId ? { ...item, count: 0 } : item
-      )
+        item.id === itemId ? { ...item, count: 0 } : item,
+      ),
     );
   };
 
   const handleReset = () => {
     setCartInput("");
     setAllLists.forEach((setList) =>
-      setList((prevList) => prevList.map((item) => ({ ...item, count: 0 })))
+      setList((prevList) => prevList.map((item) => ({ ...item, count: 0 }))),
     );
   };
 
@@ -91,6 +102,11 @@ export default function Tackle() {
     setIsDarkMode((prev) => {
       const newMode = !prev;
       localStorage.setItem("dark-mode", newMode ? "enabled" : "disabled");
+      if (newMode) {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
       return newMode;
     });
   };
@@ -117,14 +133,14 @@ export default function Tackle() {
         </header>
 
         <div className="flex justify-end mb-4">
-        <Link href="/report-missing?pageType=tackle">
-          <button className="bg-red-500 text-white px-4 py-2 rounded font-bold hover:bg-red-600">
-            Report Missing
-          </button>
-        </Link>
+          <Link href="/report-missing?pageType=tackle">
+            <button className="bg-red-500 text-white px-4 py-2 rounded font-bold hover:bg-red-600">
+              Report Missing
+            </button>
+          </Link>
         </div>
 
-        <Controls 
+        <Controls
           cartInput={cartInput}
           isDarkMode={isDarkMode}
           currentPage="tackle"
@@ -134,7 +150,9 @@ export default function Tackle() {
           onToggleDarkMode={toggleDarkMode}
         />
 
-        <h4 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Bulky</h4>
+        <h4 className="text-xl font-semibold text-blue-600 dark:text-blue-600-100 mb-2">
+          Bulky
+        </h4>
         <ul className="mb-6">
           {bulkyList.map((item) => (
             <li
@@ -151,7 +169,9 @@ export default function Tackle() {
           ))}
         </ul>
 
-        <h4 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2 mt-6">Small</h4>
+        <h4 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2 mt-6">
+          Small
+        </h4>
         <ul className="mb-6">
           {smallsList.map((item) => (
             <li
@@ -168,7 +188,9 @@ export default function Tackle() {
           ))}
         </ul>
 
-        <h4 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2 mt-6">Huge</h4>
+        <h4 className="text-xl font-semibold text-yellow-500 dark:text-yellow-500 mb-2 mt-6">
+          Huge
+        </h4>
         <ul className="mb-6">
           {hugeList.map((item) => (
             <li
@@ -185,7 +207,9 @@ export default function Tackle() {
           ))}
         </ul>
 
-        <h4 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2 mt-6">Rod carts</h4>
+        <h4 className="text-xl font-semibold text-red-500 dark:text-red-600 mb-2 mt-6">
+          Rod carts
+        </h4>
         <ul className="mb-6">
           {rodCartsList.map((item) => (
             <li
@@ -202,7 +226,9 @@ export default function Tackle() {
           ))}
         </ul>
 
-        <h4 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2 mt-6">Rod Boxes</h4>
+        <h4 className="text-xl font-semibold text-red-600 dark:text-red-600 mb-2 mt-6">
+          Rod Boxes
+        </h4>
         <ul>
           {rodBoxesList.map((item) => (
             <li

@@ -5,18 +5,21 @@ import { useEffect, useState } from "react";
 import Controls from "../../components/Controls";
 import {
   CartItem,
-  inlineList as initialInlineList,
+  inlineCarts as initialInlineList,
 } from "../../lib/inlineCarts";
 
 export default function Inline() {
   const [cartInput, setCartInput] = useState<string>("");
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   const [mounted, setMounted] = useState<boolean>(false);
-  const [inlineList, setInlineList] = useState<CartItem[]>(initialInlineList);
+  const [inlineCarts, setInlineList] = useState<CartItem[]>(initialInlineList);
 
   useEffect(() => {
     const darkModeEnabled = localStorage.getItem("dark-mode") === "enabled";
     setIsDarkMode(darkModeEnabled);
+    if (darkModeEnabled) {
+      document.documentElement.classList.add("dark");
+    }
     setMounted(true);
   }, []);
 
@@ -115,11 +118,11 @@ export default function Inline() {
           onReset={handleReset}
           onToggleDarkMode={toggleDarkMode}
         />
-        <h4 className="text-xl font-semibold text-Red-800 dark:text-gray-200 mb-2">
-          Inline List
+        <h4 className="text-xl font-semibold text-red-600 dark:text-red-500 mb-2">
+          Inline Carts
         </h4>
         <ul className="mb-6">
-          {inlineList.map((item) => (
+          {inlineCarts.map((item) => (
             <li
               key={item.id}
               data-cart={item.id}

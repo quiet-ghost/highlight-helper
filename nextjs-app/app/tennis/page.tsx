@@ -13,7 +13,8 @@ export default function Tennis() {
   const [cartInput, setCartInput] = useState<string>("");
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   const [mounted, setMounted] = useState<boolean>(false);
-  const [tennisCarts, setTennisCarts] = useState<CartItem[]>(initialTennisCarts);
+  const [tennisCarts, setTennisCarts] =
+    useState<CartItem[]>(initialTennisCarts);
 
   const allLists = [tennisCarts];
   const setAllLists = [setTennisCarts];
@@ -21,6 +22,9 @@ export default function Tennis() {
   useEffect(() => {
     const darkModeEnabled = localStorage.getItem("dark-mode") === "enabled";
     setIsDarkMode(darkModeEnabled);
+    if (darkModeEnabled) {
+      document.documentElement.classList.add("dark");
+    }
     setMounted(true);
   }, []);
 
@@ -36,7 +40,7 @@ export default function Tennis() {
                 return { ...item, count: item.count + 1 };
               }
               return item;
-            })
+            }),
           );
         });
         setCartInput("");
@@ -47,28 +51,28 @@ export default function Tennis() {
   const handleItemClick = (listIndex: number, itemId: string) => {
     setAllLists[listIndex]((prevList) =>
       prevList.map((item) =>
-        item.id === itemId ? { ...item, count: item.count + 1 } : item
-      )
+        item.id === itemId ? { ...item, count: item.count + 1 } : item,
+      ),
     );
   };
 
   const handleContextMenu = (
     e: React.MouseEvent<HTMLLIElement>,
     listIndex: number,
-    itemId: string
+    itemId: string,
   ) => {
     e.preventDefault();
     setAllLists[listIndex]((prevList) =>
       prevList.map((item) =>
-        item.id === itemId ? { ...item, count: 0 } : item
-      )
+        item.id === itemId ? { ...item, count: 0 } : item,
+      ),
     );
   };
 
   const handleReset = () => {
     setCartInput("");
     setAllLists.forEach((setList) =>
-      setList((prevList) => prevList.map((item) => ({ ...item, count: 0 })))
+      setList((prevList) => prevList.map((item) => ({ ...item, count: 0 }))),
     );
   };
 
@@ -76,6 +80,11 @@ export default function Tennis() {
     setIsDarkMode((prev) => {
       const newMode = !prev;
       localStorage.setItem("dark-mode", newMode ? "enabled" : "disabled");
+      if (newMode) {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
       return newMode;
     });
   };
@@ -102,11 +111,11 @@ export default function Tennis() {
         </header>
 
         <div className="flex justify-end mb-4">
-        <Link href="/report-missing?pageType=tackle">
-          <button className="bg-red-500 text-white px-4 py-2 rounded font-bold hover:bg-red-600">
-            Report Missing
-          </button>
-        </Link>
+          <Link href="/report-missing?pageType=tackle">
+            <button className="bg-red-500 text-white px-4 py-2 rounded font-bold hover:bg-red-600">
+              Report Missing
+            </button>
+          </Link>
         </div>
 
         <Controls
@@ -119,7 +128,7 @@ export default function Tennis() {
           onToggleDarkMode={toggleDarkMode}
         />
 
-        <h4 className="text-xl font-semibold text-blue-600 dark:text-gray-200 mb-2">
+        <h4 className="text-xl font-semibold text-blue-600 dark:text-blue-500 mb-2">
           Tennis Carts
         </h4>
         <ul className="mb-6">
@@ -130,7 +139,9 @@ export default function Tennis() {
               onClick={() => handleItemClick(0, item.id)}
               onContextMenu={(e) => handleContextMenu(e, 0, item.id)}
               className={`p-5 text-black hover:bg-yellow-200 cursor-pointer ${
-                item.count > 0 ? "selected dark:bg-yellow-400 dark:text-black" : "dark:text-white"
+                item.count > 0
+                  ? "selected dark:bg-yellow-400 dark:text-black"
+                  : "dark:text-white"
               }`}
             >
               {renderItemText(item)}
