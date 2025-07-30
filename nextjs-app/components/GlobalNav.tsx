@@ -13,6 +13,7 @@ export default function GlobalNav() {
     if (pathname.startsWith("/tackle")) return "tackle";
     if (pathname.startsWith("/tennis")) return "tennis";
     if (pathname.startsWith("/running")) return "running";
+    if (pathname.startsWith("/inline")) return "inline";
     return null;
   };
 
@@ -38,11 +39,16 @@ export default function GlobalNav() {
       buttonClass: "bg-green-800 hover:bg-green-900",
       label: "Running Missing Items",
     },
+    inline: {
+      missingRoute: "/inline-missing",
+      buttonClass: "bg-black hover:bg-red-600",
+      label: "Inline Missing Items",
+    },
   };
 
   // Filter out the current page’s button for the hamburger menu
   const otherPages = Object.entries(pageMap).filter(
-    ([key]) => key !== currentPageType
+    ([key]) => key !== currentPageType,
   );
 
   return (
@@ -58,7 +64,6 @@ export default function GlobalNav() {
         </Link>
       )}
 
-
       {/* Hamburger Menu */}
       <div className="fixed top-4 left-4">
         <button
@@ -68,11 +73,11 @@ export default function GlobalNav() {
           ☰ {/* Hamburger icon */}
         </button>
         {/* Home Button */}
-      <Link href="/">
-        <button className="bg-inherit text-white px-4 py-2 rounded font-bold hover:bg-gray-800">
-          🏠 {/* Home icon */}
-        </button>
-      </Link>
+        <Link href="/">
+          <button className="bg-inherit text-white px-4 py-2 rounded font-bold hover:bg-gray-800">
+            🏠 {/* Home icon */}
+          </button>
+        </Link>
 
         {isMenuOpen && (
           <div className="absolute top-12 left-0 bg-gray-800 rounded-lg shadow-lg p-2 w-48">

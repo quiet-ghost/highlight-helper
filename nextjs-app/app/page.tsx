@@ -51,6 +51,11 @@ export default function Home() {
             Running Warehouse
           </button>
         </Link>
+        <Link href="/inline">
+          <button className="px-4 py-2 font-bold text-white bg-black rounded hover:bg-red-800">
+            Inline Warehouse
+          </button>
+        </Link>
         <button
           onClick={toggleDarkMode}
           className="px-4 py-2 font-bold text-white bg-gray-700 rounded hover:bg-gray-800"
@@ -77,6 +82,11 @@ export default function Home() {
             Running Missing
           </button>
         </Link>
+        <Link href="/inline-missing">
+          <button className="px-4 py-2 font-bold text-white bg-black rounded hover:bg-red-800">
+            Inline Missing
+          </button>
+        </Link>
       </div>
       <p className="mt-6 mb-2 font-sans text-center text-gray-800 dark:text-white">
         For Highlight Runners (level 3 Area):
@@ -87,7 +97,7 @@ export default function Home() {
             Highlight Searchers
           </button>
         </Link>
-        </div>
+      </div>
     </div>
-);
+  );
 }

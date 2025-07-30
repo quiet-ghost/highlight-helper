@@ -54,10 +54,10 @@ function ReportMissingContent() {
       qty_missing: formData.qty_missing,
       description: formData.description,
     };
-    
+
     setQueuedItems((prev) => [...prev, newItem]);
     setHasSetCommonData(true);
-    
+
     // Clear only the item-specific fields
     setFormData((prev) => ({
       ...prev,
@@ -78,7 +78,7 @@ function ReportMissingContent() {
     e.preventDefault();
     try {
       console.log("Submitting items:", { formData, queuedItems });
-      
+
       // Submit current item
       await saveMissingItem({
         initials: formData.initials,
@@ -149,7 +149,9 @@ function ReportMissingContent() {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="w-full max-w-sm p-6 bg-gray-800 rounded-lg shadow-lg">
         <h2 className="mb-4 text-xl font-bold text-white">Items Submitted</h2>
-        <p className="mb-4 text-white">All missing items reported successfully!</p>
+        <p className="mb-4 text-white">
+          All missing items reported successfully!
+        </p>
         <div className="flex justify-end space-x-2">
           <button
             onClick={() => setIsModalOpen(false)}
@@ -169,7 +171,7 @@ function ReportMissingContent() {
           Report Missing Items
         </h1>
         {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
-        
+
         {/* Show queued items if any */}
         {queuedItems.length > 0 && (
           <div className="mb-4 p-3 bg-gray-700 rounded-lg">
@@ -178,9 +180,13 @@ function ReportMissingContent() {
             </h3>
             <div className="space-y-2">
               {queuedItems.map((item, index) => (
-                <div key={index} className="flex justify-between items-center p-2 bg-gray-600 rounded text-sm">
+                <div
+                  key={index}
+                  className="flex justify-between items-center p-2 bg-gray-600 rounded text-sm"
+                >
                   <span className="text-white truncate">
-                    Order #{item.order_number} - {item.description.substring(0, 30)}...
+                    Order #{item.order_number} -{" "}
+                    {item.description.substring(0, 30)}...
                   </span>
                   <button
                     type="button"
@@ -219,6 +225,7 @@ function ReportMissingContent() {
                   <option value="tackle">Tackle Warehouse</option>
                   <option value="tennis">Tennis Warehouse</option>
                   <option value="running">Running Warehouse</option>
+                  <option value="inline">Inline Warehouse</option>
                 </select>
               </div>
               <div className="mb-4">
@@ -259,11 +266,12 @@ function ReportMissingContent() {
               </div>
             </>
           )}
-          
+
           {hasSetCommonData && (
             <div className="mb-4 p-3 bg-gray-700 rounded-lg">
               <p className="text-sm text-gray-300">
-                <strong>Initials:</strong> {formData.initials} | <strong>Cart:</strong> {formData.cart_number}
+                <strong>Initials:</strong> {formData.initials} |{" "}
+                <strong>Cart:</strong> {formData.cart_number}
               </p>
             </div>
           )}
@@ -387,7 +395,8 @@ function ReportMissingContent() {
               type="submit"
               className="px-4 py-2 font-bold text-white bg-red-500 rounded hover:bg-red-600"
             >
-              Submit{queuedItems.length > 0 ? ` All (${queuedItems.length + 1})` : ''}
+              Submit
+              {queuedItems.length > 0 ? ` All (${queuedItems.length + 1})` : ""}
             </button>
           </div>
         </form>

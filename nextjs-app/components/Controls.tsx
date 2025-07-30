@@ -6,7 +6,7 @@ import { ChangeEvent, KeyboardEvent } from "react";
 interface ControlsProps {
   cartInput: string;
   isDarkMode: boolean;
-  currentPage: "tackle" | "tennis" | "running";
+  currentPage: "tackle" | "tennis" | "running" | "inline";
   onInputChange: (e: ChangeEvent<HTMLInputElement>) => void;
   onKeyDown: (e: KeyboardEvent<HTMLInputElement>) => void;
   onReset: () => void;
@@ -23,9 +23,12 @@ export default function Controls({
   onToggleDarkMode,
 }: ControlsProps) {
   const buttonStyles = {
-    tackle: "bg-red-500 hover:bg-black dark:bg-red-500 dark:hover:bg-black", // updated tackle hover style
-    tennis: "bg-blue-600 hover:bg-yellow-500 dark:bg-blue-600 dark:hover:bg-yellow-500",
-    running: "bg-green-800 hover:bg-green-600 dark:bg-green-800 dark:hover:bg-green-600",
+    tackle: "bg-red-500 hover:bg-black dark:bg-red-500 dark:hover:bg-black",
+    tennis:
+      "bg-blue-600 hover:bg-yellow-500 dark:bg-blue-600 dark:hover:bg-yellow-500",
+    running:
+      "bg-green-800 hover:bg-green-600 dark:bg-green-800 dark:hover:bg-green-600",
+    inline: "bg-black hover:bg-red-500 dark:bg-black dark:hover:bg-red-500",
   };
 
   const currentButtonStyle = buttonStyles[currentPage];
@@ -66,7 +69,9 @@ export default function Controls({
           </button>
         ) : (
           <Link href="/tackle">
-            <button className={`${buttonStyles.tackle} text-white px-4 py-2 rounded font-bold hover:bg-gray-800`}>
+            <button
+              className={`${buttonStyles.tackle} text-white px-4 py-2 rounded font-bold hover:bg-gray-800`}
+            >
               Tackle Warehouse
             </button>
           </Link>
@@ -80,7 +85,9 @@ export default function Controls({
           </button>
         ) : (
           <Link href="/tennis">
-            <button className={`${buttonStyles.tennis} text-white px-4 py-2 rounded font-bold hover:bg-yellow-500`}>
+            <button
+              className={`${buttonStyles.tennis} text-white px-4 py-2 rounded font-bold hover:bg-yellow-500`}
+            >
               Tennis Warehouse
             </button>
           </Link>
@@ -94,8 +101,26 @@ export default function Controls({
           </button>
         ) : (
           <Link href="/running">
-            <button className={`${buttonStyles.running} text-white px-4 py-2 rounded font-bold hover:bg-green-600`}>
+            <button
+              className={`${buttonStyles.running} text-white px-4 py-2 rounded font-bold hover:bg-green-600`}
+            >
               Running Warehouse
+            </button>
+          </Link>
+        )}
+        {currentPage === "inline" ? (
+          <button
+            disabled
+            className="px-4 py-2 font-bold text-gray-700 bg-gray-300 rounded cursor-not-allowed"
+          >
+            Inline Warehouse
+          </button>
+        ) : (
+          <Link href="/inline">
+            <button
+              className={`${buttonStyles.inline} text-white px-4 py-2 rounded font-bold hover:bg-black`}
+            >
+              Inline Warehouse
             </button>
           </Link>
         )}

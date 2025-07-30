@@ -10,7 +10,7 @@ export interface MissingItem {
   on_hand_qty: number;
   qty_missing: number;
   description?: string;
-  page_type: "tackle" | "tennis" | "running";
+  page_type: "tackle" | "tennis" | "running" | "inline";
   timestamp: string;
   completed: boolean;
   on_cart: boolean;
@@ -33,7 +33,7 @@ export async function saveMissingItem(
 }
 
 export async function getMissingItems(
-  pageType: "tackle" | "tennis" | "running",
+  pageType: "tackle" | "tennis" | "running" | "inline",
 ): Promise<MissingItem[]> {
   const { data, error } = await supabase
     .from("missing_items")
@@ -45,7 +45,7 @@ export async function getMissingItems(
 }
 
 export async function updateMissingItem(
-  pageType: "tackle" | "tennis" | "running",
+  pageType: "tackle" | "tennis" | "running" | "inline",
   id: number,
   updates: Partial<MissingItem>,
 ) {
@@ -58,7 +58,7 @@ export async function updateMissingItem(
 }
 
 export async function clearMissingItems(
-  pageType: "tackle" | "tennis" | "running",
+  pageType: "tackle" | "tennis" | "running" | "inline",
 ) {
   const { error } = await supabase
     .from("missing_items")
