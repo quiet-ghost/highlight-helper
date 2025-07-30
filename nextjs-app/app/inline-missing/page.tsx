@@ -91,14 +91,6 @@ export default function RunningMissing() {
     await updateMissingItem("inline", id, { completed });
   };
 
-  const handleChecked1Change = async (id: number, checked: boolean) => {
-    await updateMissingItem("inline", id, { on_cart: checked });
-  };
-
-  const handleChecked2Change = async (id: number, checked: boolean) => {
-    await updateMissingItem("inline", id, { looked_for: checked });
-  };
-
   const handleClearAll = async () => {
     if (
       confirm(
@@ -257,7 +249,6 @@ export default function RunningMissing() {
                     }
                   />
                 </td>
-
               </tr>
             ))}
           </tbody>
