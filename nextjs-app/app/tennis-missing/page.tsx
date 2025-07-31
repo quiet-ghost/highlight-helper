@@ -17,6 +17,9 @@ export default function TennisMissing() {
   useEffect(() => {
     const darkModeEnabled = localStorage.getItem("dark-mode") === "enabled";
     setIsDarkMode(darkModeEnabled);
+    if (darkModeEnabled) {
+      document.documentElement.classList.add("dark");
+    }
 
     if (!isAuthenticated) return;
     

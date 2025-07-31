@@ -103,6 +103,28 @@ body {
   background: #1e1e1e;
 }
 
+/* Inline Warehouse Theme */
+.inline-theme {
+  background-color: #fff; 
+}
+
+.inline-theme .container {
+  background: #fff;
+}
+
+.inline-theme .selected {
+  background-color: #1a1a1a;
+  color: #fff;
+}
+
+.dark .inline-theme {
+  background-color: #1a1a1a;
+}
+
+.dark .inline-theme .container {
+  background: #1e1e1e;
+}
+
 /* Dark Mode Styles */
 .dark {
   background-color: #121212;
