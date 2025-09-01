@@ -34,7 +34,7 @@ yarn-error.log*
 .env*
 
 # Worktree directories
-/.worktrees/
+.worktrees/
 
 # vercel
 .vercel
