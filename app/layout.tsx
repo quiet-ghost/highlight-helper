@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
-import GlobalNav from "../components/GlobalNav";
-import { AuthProvider } from "../lib/authContext";
-import "../styles/globals.css";
+import { ClientBody } from "./ClientBody";
 
 export const metadata: Metadata = {
   title: "Highlight Helper",
-  description: "A Highlight Management Tool for Tackle, Tennis, and Running Warehouse",
+  description:
+    "A Highlight Management Tool for Tackle, Tennis, and Running Warehouse",
 };
 
 export default function RootLayout({
@@ -16,10 +15,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <AuthProvider>
-          <GlobalNav />
-          {children}
-        </AuthProvider>
+        <ClientBody>{children}</ClientBody>
       </body>
     </html>
   );
