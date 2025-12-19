@@ -5,6 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { createPortal } from "react-dom";
 import { saveMissingItem } from "../../lib/missingItems";
+import { useSnowfall } from "../../lib/snowfallContext";
+import { useSnowAnimation } from "../../lib/useSnowAnimation";
 
 interface QueuedItem {
   order_number: string;
@@ -19,6 +21,9 @@ interface QueuedItem {
 function ReportMissingContent() {
   const searchParams = useSearchParams();
   const initialPageType = searchParams.get("pageType") || "default";
+  const { isSnowfallEnabled } = useSnowfall();
+  const snowAnimationState = useSnowAnimation(isSnowfallEnabled);
+  const snowClass = `btn-snow-accumulation ${snowAnimationState}`;
   const [formData, setFormData] = useState({
     initials: "",
     cart_number: "",
@@ -153,12 +158,20 @@ function ReportMissingContent() {
           All missing items reported successfully!
         </p>
         <div className="flex justify-end space-x-2">
-          <button
-            onClick={() => setIsModalOpen(false)}
-            className="px-4 py-2 font-bold text-white bg-blue-500 rounded hover:bg-blue-600"
-          >
-            Add More Items
-          </button>
+<button
+             onClick={() => setIsModalOpen(false)}
+             className={`px-4 py-2 font-bold text-white bg-blue-500 rounded hover:bg-blue-600 btn-snow-accumulation ${snowClass}`}
+           >
+             Add More Items
+             {isSnowfallEnabled && (
+               <>
+                 <span className="snow-corner-right"></span>
+                 <span className="snow-mount snow-mount-1"></span>
+                 <span className="snow-mount snow-mount-2"></span>
+                 <span className="snow-mount snow-mount-3"></span>
+               </>
+             )}
+           </button>
         </div>
       </div>
     </div>
@@ -188,13 +201,21 @@ function ReportMissingContent() {
                     Order #{item.order_number} -{" "}
                     {item.description.substring(0, 30)}...
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => removeQueuedItem(index)}
-                    className="px-2 py-1 text-xs text-white bg-red-500 rounded hover:bg-red-600"
-                  >
-                    Remove
-                  </button>
+<button
+                     type="button"
+                     onClick={() => removeQueuedItem(index)}
+                     className={`px-2 py-1 text-xs text-white bg-red-500 rounded hover:bg-red-600 btn-snow-accumulation ${snowClass}`}
+                   >
+                     Remove
+                     {isSnowfallEnabled && (
+                       <>
+                         <span className="snow-corner-right"></span>
+                         <span className="snow-mount snow-mount-1"></span>
+                         <span className="snow-mount snow-mount-2"></span>
+                         <span className="snow-mount snow-mount-3"></span>
+                       </>
+                     )}
+                   </button>
                 </div>
               ))}
             </div>
@@ -384,20 +405,36 @@ function ReportMissingContent() {
             />
           </div>
           <div className="flex justify-end space-x-2">
-            <button
-              type="button"
-              onClick={addItem}
-              className="px-4 py-2 font-bold text-white bg-green-500 rounded hover:bg-green-600"
-            >
-              Add Item
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 font-bold text-white bg-red-500 rounded hover:bg-red-600"
-            >
-              Submit
-              {queuedItems.length > 0 ? ` All (${queuedItems.length + 1})` : ""}
-            </button>
+<button
+               type="button"
+               onClick={addItem}
+               className={`px-4 py-2 font-bold text-white bg-green-500 rounded hover:bg-green-600 btn-snow-accumulation ${snowClass}`}
+             >
+               Add Item
+               {isSnowfallEnabled && (
+                 <>
+                   <span className="snow-corner-right"></span>
+                   <span className="snow-mount snow-mount-1"></span>
+                   <span className="snow-mount snow-mount-2"></span>
+                   <span className="snow-mount snow-mount-3"></span>
+                 </>
+               )}
+             </button>
+             <button
+               type="submit"
+               className={`px-4 py-2 font-bold text-white bg-red-500 rounded hover:bg-red-600 btn-snow-accumulation ${snowClass}`}
+             >
+               Submit
+               {queuedItems.length > 0 ? ` All (${queuedItems.length + 1})` : ""}
+               {isSnowfallEnabled && (
+                 <>
+                   <span className="snow-corner-right"></span>
+                   <span className="snow-mount snow-mount-1"></span>
+                   <span className="snow-mount snow-mount-2"></span>
+                   <span className="snow-mount snow-mount-3"></span>
+                 </>
+               )}
+             </button>
           </div>
         </form>
       </div>

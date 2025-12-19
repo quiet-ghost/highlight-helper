@@ -3,6 +3,7 @@ import Head from "next/head";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import Controls from "../../components/Controls";
+import { useSnowfall } from "../../lib/snowfallContext";
 import {
   CartItem,
   runningList as initialRunningList,
@@ -12,6 +13,7 @@ export default function Running() {
   const [cartInput, setCartInput] = useState<string>("");
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   const [mounted, setMounted] = useState<boolean>(false);
+  const { isSnowfallEnabled } = useSnowfall();
   const [runningList, setRunningList] =
     useState<CartItem[]>(initialRunningList);
 
@@ -106,6 +108,14 @@ export default function Running() {
           <Link href="/report-missing?pageType=tackle">
             <button className="bg-red-500 text-white px-4 py-2 rounded font-bold hover:bg-red-600">
               Report Missing
+              {isSnowfallEnabled && (
+                <>
+                  <span className="snow-corner-right"></span>
+                  <span className="snow-mount snow-mount-1"></span>
+                  <span className="snow-mount snow-mount-2"></span>
+                  <span className="snow-mount snow-mount-3"></span>
+                </>
+              )}
             </button>
           </Link>
         </div>
@@ -113,6 +123,7 @@ export default function Running() {
         <Controls
           cartInput={cartInput}
           isDarkMode={isDarkMode}
+          isSnowfallEnabled={isSnowfallEnabled}
           currentPage="running"
           onInputChange={(e) => setCartInput(e.target.value)}
           onKeyDown={handleKeyDown}

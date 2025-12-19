@@ -2,21 +2,27 @@
 
 import { useEffect, useState } from "react";
 import { AuthProvider } from "../lib/authContext";
+import { SnowfallProvider } from "../lib/snowfallContext";
 import GlobalNav from "../components/GlobalNav";
 import SnowfallToggle from "../components/SnowfallToggle";
 import Snowfall from "react-snowfall";
 import "../styles/globals.css";
 
 export function ClientBody({ children }: { children: React.ReactNode }) {
-  const [isSnowfallEnabled, setIsSnowfallEnabled] = useState<boolean>(true);
+  // Synchronous state initialization to prevent race condition
+  const getInitialSnowfallState = (): boolean => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem("snowfall-enabled") !== "disabled";
+    }
+    return true; // Default for SSR
+  };
+
+  const [isSnowfallEnabled, setIsSnowfallEnabled] = useState<boolean>(getInitialSnowfallState());
   const [snowflakeCount, setSnowflakeCount] = useState<number>(500);
   const [isStopping, setIsStopping] = useState<boolean>(false);
   const [mounted, setMounted] = useState<boolean>(false);
 
   useEffect(() => {
-    const snowfallEnabled =
-      localStorage.getItem("snowfall-enabled") !== "disabled";
-    setIsSnowfallEnabled(snowfallEnabled);
     setMounted(true);
   }, []);
 
@@ -75,12 +81,14 @@ export function ClientBody({ children }: { children: React.ReactNode }) {
         />
       )}
       <AuthProvider>
-        <GlobalNav />
-        <SnowfallToggle
-          isSnowfallEnabled={isSnowfallEnabled}
-          onToggleSnowfall={toggleSnowfall}
-        />
-        {children}
+        <SnowfallProvider isSnowfallEnabled={isSnowfallEnabled} onToggleSnowfall={toggleSnowfall}>
+          <GlobalNav />
+          <SnowfallToggle
+            isSnowfallEnabled={isSnowfallEnabled}
+            onToggleSnowfall={toggleSnowfall}
+          />
+          {children}
+        </SnowfallProvider>
       </AuthProvider>
     </>
   );
