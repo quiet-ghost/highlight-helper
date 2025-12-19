@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import Login from "../../components/Login";
 import { useAuth } from "../../lib/authContext";
+import { useSnowfall } from "../../lib/snowfallContext";
+import { useSnowAnimation } from "../../lib/useSnowAnimation";
 import { clearMissingItems, getMissingItems, MissingItem, updateMissingItem } from "../../lib/missingItems";
 import { supabase } from "../../lib/supabaseClient";
 
@@ -13,6 +15,9 @@ export default function TennisMissing() {
   const [sortField, setSortField] = useState<keyof MissingItem | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const { isAuthenticated, logout } = useAuth();
+  const { isSnowfallEnabled } = useSnowfall();
+  const snowAnimationState = useSnowAnimation(isSnowfallEnabled);
+  const snowClass = `btn-snow-accumulation ${snowAnimationState}`;
 
   useEffect(() => {
     const darkModeEnabled = localStorage.getItem("dark-mode") === "enabled";
@@ -128,22 +133,46 @@ export default function TennisMissing() {
       </h1>
       <div className="flex justify-between mb-4">
         <Link href="/tennis">
-          <button className="px-4 py-2 font-bold text-white bg-red-500 rounded hover:bg-red-600">
+          <button className={`px-4 py-2 font-bold text-white bg-red-500 rounded hover:bg-red-600 btn-snow-accumulation ${snowClass}`}>
             Back to Tennis
+            {isSnowfallEnabled && (
+              <>
+                <span className="snow-corner-right"></span>
+                <span className="snow-mount snow-mount-1"></span>
+                <span className="snow-mount snow-mount-2"></span>
+                <span className="snow-mount snow-mount-3"></span>
+              </>
+            )}
           </button>
         </Link>
         <div className="space-x-2">
           <button
             onClick={handleClearAll}
-            className="px-4 py-2 font-bold text-white bg-red-500 rounded hover:bg-red-600"
+            className={`px-4 py-2 font-bold text-white bg-red-500 rounded hover:bg-red-600 btn-snow-accumulation ${snowClass}`}
           >
             Clear Completed
+            {isSnowfallEnabled && (
+              <>
+                <span className="snow-corner-right"></span>
+                <span className="snow-mount snow-mount-1"></span>
+                <span className="snow-mount snow-mount-2"></span>
+                <span className="snow-mount snow-mount-3"></span>
+              </>
+            )}
           </button>
           <button
             onClick={logout}
-            className="px-4 py-2 font-bold text-white bg-gray-500 rounded hover:bg-gray-600"
+            className={`px-4 py-2 font-bold text-white bg-gray-500 rounded hover:bg-gray-600 btn-snow-accumulation ${snowClass}`}
           >
             Logout
+            {isSnowfallEnabled && (
+              <>
+                <span className="snow-corner-right"></span>
+                <span className="snow-mount snow-mount-1"></span>
+                <span className="snow-mount snow-mount-2"></span>
+                <span className="snow-mount snow-mount-3"></span>
+              </>
+            )}
           </button>
         </div>
       </div>

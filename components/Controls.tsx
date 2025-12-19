@@ -2,10 +2,12 @@
 "use client";
 import Link from "next/link";
 import { ChangeEvent, KeyboardEvent } from "react";
+import { useSnowAnimation } from "../lib/useSnowAnimation";
 
 interface ControlsProps {
   cartInput: string;
   isDarkMode: boolean;
+  isSnowfallEnabled: boolean;
   currentPage: "tackle" | "tennis" | "running" | "inline";
   onInputChange: (e: ChangeEvent<HTMLInputElement>) => void;
   onKeyDown: (e: KeyboardEvent<HTMLInputElement>) => void;
@@ -16,12 +18,15 @@ interface ControlsProps {
 export default function Controls({
   cartInput,
   isDarkMode,
+  isSnowfallEnabled,
   currentPage,
   onInputChange,
   onKeyDown,
   onReset,
   onToggleDarkMode,
 }: ControlsProps) {
+  const snowAnimationState = useSnowAnimation(isSnowfallEnabled);
+
   const buttonStyles = {
     tackle: "bg-red-500 hover:bg-black dark:bg-red-500 dark:hover:bg-black",
     tennis:
@@ -32,6 +37,8 @@ export default function Controls({
   };
 
   const currentButtonStyle = buttonStyles[currentPage];
+  const snowClass = `btn-snow-accumulation ${snowAnimationState}`;
+
 
   return (
     <div className="grid justify-center gap-2 mb-10 input-wrapper">
@@ -47,15 +54,31 @@ export default function Controls({
         />
         <button
           onClick={onReset}
-          className={`${currentButtonStyle} text-white px-4 py-2 rounded font-bold`}
+          className={`${currentButtonStyle} ${snowClass} text-white px-4 py-2 rounded font-bold`}
         >
           Reset
+          {isSnowfallEnabled && (
+            <>
+              <span className="snow-corner-right"></span>
+              <span className="snow-mount snow-mount-1"></span>
+              <span className="snow-mount snow-mount-2"></span>
+              <span className="snow-mount snow-mount-3"></span>
+            </>
+          )}
         </button>
         <button
           onClick={onToggleDarkMode}
-          className={`${currentButtonStyle} text-white px-4 py-2 rounded font-bold`}
+          className={`${currentButtonStyle} ${snowClass} text-white px-4 py-2 rounded font-bold`}
         >
           {isDarkMode ? "Light Mode" : "Dark Mode"}
+          {isSnowfallEnabled && (
+            <>
+              <span className="snow-corner-right"></span>
+              <span className="snow-mount snow-mount-1"></span>
+              <span className="snow-mount snow-mount-2"></span>
+              <span className="snow-mount snow-mount-3"></span>
+            </>
+          )}
         </button>
       </div>
 
@@ -70,9 +93,10 @@ export default function Controls({
         ) : (
           <Link href="/tackle">
             <button
-              className={`${buttonStyles.tackle} text-white px-4 py-2 rounded font-bold hover:bg-gray-800`}
+              className={`${buttonStyles.tackle} ${snowClass} text-white px-4 py-2 rounded font-bold hover:bg-gray-800`}
             >
               Tackle Warehouse
+              {isSnowfallEnabled && <span className="snow-corner-right"></span>}
             </button>
           </Link>
         )}
@@ -86,9 +110,10 @@ export default function Controls({
         ) : (
           <Link href="/tennis">
             <button
-              className={`${buttonStyles.tennis} text-white px-4 py-2 rounded font-bold hover:bg-yellow-500`}
+              className={`${buttonStyles.tennis} ${snowClass} text-white px-4 py-2 rounded font-bold hover:bg-yellow-500`}
             >
               Tennis Warehouse
+              {isSnowfallEnabled && <span className="snow-corner-right"></span>}
             </button>
           </Link>
         )}
@@ -102,9 +127,10 @@ export default function Controls({
         ) : (
           <Link href="/running">
             <button
-              className={`${buttonStyles.running} text-white px-4 py-2 rounded font-bold hover:bg-green-600`}
+              className={`${buttonStyles.running} ${snowClass} text-white px-4 py-2 rounded font-bold hover:bg-green-600`}
             >
               Running Warehouse
+              {isSnowfallEnabled && <span className="snow-corner-right"></span>}
             </button>
           </Link>
         )}
@@ -118,9 +144,10 @@ export default function Controls({
         ) : (
           <Link href="/inline">
             <button
-              className={`${buttonStyles.inline} text-white px-4 py-2 rounded font-bold hover:bg-black`}
+              className={`${buttonStyles.inline} ${snowClass} text-white px-4 py-2 rounded font-bold hover:bg-black`}
             >
               Inline Warehouse
+              {isSnowfallEnabled && <span className="snow-corner-right"></span>}
             </button>
           </Link>
         )}

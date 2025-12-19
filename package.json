@@ -10,9 +10,10 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",
-    "next": "15.5.7",
+    "next": "15.5.9",
     "react": "19.1.2",
-    "react-dom": "19.1.2"
+    "react-dom": "19.1.2",
+    "react-snowfall": "^2.4.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

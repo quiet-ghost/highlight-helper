@@ -5,6 +5,7 @@ import Head from "next/head";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import Controls from "../../components/Controls";
+import { useSnowfall } from "../../lib/snowfallContext";
 import {
   CartItem,
   bulkyList as initialBulkyList,
@@ -18,6 +19,7 @@ export default function Tackle() {
   const [cartInput, setCartInput] = useState<string>("");
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   const [mounted, setMounted] = useState<boolean>(false);
+  const { isSnowfallEnabled } = useSnowfall();
   const [bulkyList, setBulkyList] = useState<CartItem[]>(initialBulkyList);
   const [smallsList, setSmallsList] = useState<CartItem[]>(initialSmallsList);
   const [hugeList, setHugeList] = useState<CartItem[]>(initialHugeList);
@@ -143,6 +145,7 @@ export default function Tackle() {
         <Controls
           cartInput={cartInput}
           isDarkMode={isDarkMode}
+          isSnowfallEnabled={isSnowfallEnabled}
           currentPage="tackle"
           onInputChange={(e) => setCartInput(e.target.value)}
           onKeyDown={handleKeyDown}
