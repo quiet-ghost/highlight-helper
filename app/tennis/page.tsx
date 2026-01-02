@@ -4,7 +4,6 @@ import Head from "next/head";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import Controls from "../../components/Controls";
-import { useSnowfall } from "../../lib/snowfallContext";
 import {
   CartItem,
   tennisCarts as initialTennisCarts,
@@ -14,7 +13,6 @@ export default function Tennis() {
   const [cartInput, setCartInput] = useState<string>("");
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   const [mounted, setMounted] = useState<boolean>(false);
-  const { isSnowfallEnabled } = useSnowfall();
   const [tennisCarts, setTennisCarts] =
     useState<CartItem[]>(initialTennisCarts);
 
@@ -123,7 +121,6 @@ export default function Tennis() {
         <Controls
           cartInput={cartInput}
           isDarkMode={isDarkMode}
-          isSnowfallEnabled={isSnowfallEnabled}
           currentPage="tennis"
           onInputChange={(e) => setCartInput(e.target.value)}
           onKeyDown={handleKeyDown}
