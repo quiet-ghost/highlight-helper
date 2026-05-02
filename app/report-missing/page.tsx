@@ -1,10 +1,13 @@
 "use client";
 
-import { PostgrestError } from "@supabase/supabase-js"; // Import Supabase error type
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
-import { createPortal } from "react-dom";
-import { saveMissingItem } from "../../lib/missingItems";
+import Modal from "../../components/Modal";
+import {
+  NewMissingItem,
+  PageType,
+  saveMissingItems,
+} from "../../lib/missingItems";
 
 interface QueuedItem {
   order_number: string;
@@ -15,11 +18,30 @@ interface QueuedItem {
   description: string;
 }
 
+interface ReportFormData extends QueuedItem {
+  initials: string;
+  cart_number: string;
+  page_type: PageType | "";
+}
+
+function getErrorMessage(err: unknown) {
+  if (err instanceof Error) return err.message;
+  if (typeof err === "object" && err !== null && "message" in err) {
+    const message = err.message;
+    if (typeof message === "string") return message;
+  }
+  return "An unexpected error occurred";
+}
+
+function isFilled(value: string) {
+  return value.trim().length > 0;
+}
+
 // Component that uses useSearchParams
 function ReportMissingContent() {
   const searchParams = useSearchParams();
-  const initialPageType = searchParams.get("pageType") || "default";
-  const [formData, setFormData] = useState({
+  const initialPageType = PageType.parse(searchParams.get("pageType"));
+  const [formData, setFormData] = useState<ReportFormData>({
     initials: "",
     cart_number: "",
     order_number: "",
@@ -28,7 +50,7 @@ function ReportMissingContent() {
     on_hand_qty: "",
     qty_missing: "",
     description: "",
-    page_type: initialPageType as "tackle" | "tennis" | "running",
+    page_type: initialPageType ?? "",
   });
   const [queuedItems, setQueuedItems] = useState<QueuedItem[]>([]);
   const [hasSetCommonData, setHasSetCommonData] = useState(false);
@@ -41,10 +63,60 @@ function ReportMissingContent() {
     >,
   ) => {
     const { name, value } = e.target;
+    if (name === "page_type") {
+      setFormData((prev) => ({
+        ...prev,
+        page_type: PageType.parse(value) ?? "",
+      }));
+      return;
+    }
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const validateCommonFields = () => {
+    if (!formData.page_type) return "Select a warehouse before adding items.";
+    if (!isFilled(formData.initials)) return "Enter initials before adding items.";
+    if (!isFilled(formData.cart_number)) return "Enter a cart number before adding items.";
+    return null;
+  };
+
+  const hasCurrentItemFields = () =>
+    isFilled(formData.order_number) ||
+    isFilled(formData.cart_location) ||
+    isFilled(formData.bin_location) ||
+    isFilled(formData.on_hand_qty) ||
+    isFilled(formData.qty_missing) ||
+    isFilled(formData.description);
+
+  const validateItemFields = () => {
+    const commonError = validateCommonFields();
+    if (commonError) return commonError;
+    if (!isFilled(formData.order_number)) {
+      return "Enter an order number before adding items.";
+    }
+    if (!isFilled(formData.cart_location)) {
+      return "Enter a cart position before adding items.";
+    }
+    if (!isFilled(formData.bin_location)) return "Enter a bin before adding items.";
+    if (!isFilled(formData.on_hand_qty)) {
+      return "Enter an on hand quantity before adding items.";
+    }
+    if (!isFilled(formData.qty_missing)) {
+      return "Enter a quantity missing before adding items.";
+    }
+    if (!isFilled(formData.description)) {
+      return "Enter an item description before adding items.";
+    }
+    return null;
+  };
+
   const addItem = () => {
+    const validationError = validateItemFields();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
     // Queue the current item
     const newItem: QueuedItem = {
       order_number: formData.order_number,
@@ -57,6 +129,7 @@ function ReportMissingContent() {
 
     setQueuedItems((prev) => [...prev, newItem]);
     setHasSetCommonData(true);
+    setError(null);
 
     // Clear only the item-specific fields
     setFormData((prev) => ({
@@ -77,43 +150,70 @@ function ReportMissingContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      console.log("Submitting items:", { formData, queuedItems });
+      const commonError = validateCommonFields();
+      if (commonError) {
+        setError(commonError);
+        return;
+      }
 
-      // Submit current item
-      await saveMissingItem({
+      if (!formData.page_type) {
+        setError("Select a warehouse before submitting items.");
+        return;
+      }
+
+      const hasCurrentItem = hasCurrentItemFields();
+      if (!hasCurrentItem && queuedItems.length === 0) {
+        setError("Enter item details before submitting items.");
+        return;
+      }
+
+      if (hasCurrentItem) {
+        const validationError = validateItemFields();
+        if (validationError) {
+          setError(validationError);
+          return;
+        }
+      }
+
+      const pageType = formData.page_type;
+
+      const currentItems: NewMissingItem[] = hasCurrentItem
+        ? [
+            {
+              initials: formData.initials,
+              cart_number: formData.cart_number,
+              order_number: formData.order_number,
+              cart_location: formData.cart_location,
+              bin_location: formData.bin_location,
+              on_hand_qty: parseInt(formData.on_hand_qty) || 0,
+              qty_missing: parseInt(formData.qty_missing) || 0,
+              description: formData.description || undefined,
+              page_type: pageType,
+              on_cart: false,
+              looked_for: false,
+              fulf_1: false,
+              fulf_2: false,
+            },
+          ]
+        : [];
+
+      const queuedMissingItems: NewMissingItem[] = queuedItems.map((item) => ({
         initials: formData.initials,
         cart_number: formData.cart_number,
-        order_number: formData.order_number,
-        cart_location: formData.cart_location,
-        bin_location: formData.bin_location,
-        on_hand_qty: parseInt(formData.on_hand_qty) || 0,
-        qty_missing: parseInt(formData.qty_missing) || 0,
-        description: formData.description || undefined,
-        page_type: formData.page_type,
+        order_number: item.order_number,
+        cart_location: item.cart_location,
+        bin_location: item.bin_location,
+        on_hand_qty: parseInt(item.on_hand_qty) || 0,
+        qty_missing: parseInt(item.qty_missing) || 0,
+        description: item.description || undefined,
+        page_type: pageType,
         on_cart: false,
         looked_for: false,
         fulf_1: false,
         fulf_2: false,
-      });
+      }));
 
-      // Submit all queued items
-      for (const item of queuedItems) {
-        await saveMissingItem({
-          initials: formData.initials,
-          cart_number: formData.cart_number,
-          order_number: item.order_number,
-          cart_location: item.cart_location,
-          bin_location: item.bin_location,
-          on_hand_qty: parseInt(item.on_hand_qty) || 0,
-          qty_missing: parseInt(item.qty_missing) || 0,
-          description: item.description || undefined,
-          page_type: formData.page_type,
-          on_cart: false,
-          looked_for: false,
-          fulf_1: false,
-          fulf_2: false,
-        });
-      }
+      await saveMissingItems([...currentItems, ...queuedMissingItems]);
 
       // Reset form
       setFormData({
@@ -125,44 +225,22 @@ function ReportMissingContent() {
         on_hand_qty: "",
         qty_missing: "",
         description: "",
-        page_type: formData.page_type,
+        page_type: pageType,
       });
       setQueuedItems([]);
       setHasSetCommonData(false);
       setError(null);
       setIsModalOpen(true);
     } catch (err: unknown) {
-      // Narrowing the type inside the block
-      if (err instanceof Error || (err as PostgrestError).message) {
-        const message =
-          (err as PostgrestError | Error).message || "Unknown error";
-        console.error("Submission error:", message);
-        setError(`Failed to submit: ${message}`);
-      } else {
-        console.error("Unexpected error:", err);
-        setError("Failed to submit: An unexpected error occurred");
-      }
+      const message = getErrorMessage(err);
+      console.error("Submission error:", message);
+      setError(`Failed to submit: ${message}`);
     }
   };
 
-  const modalContent = isModalOpen ? (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="w-full max-w-sm p-6 bg-gray-800 rounded-lg shadow-lg">
-        <h2 className="mb-4 text-xl font-bold text-white">Items Submitted</h2>
-        <p className="mb-4 text-white">
-          All missing items reported successfully!
-        </p>
-        <div className="flex justify-end space-x-2">
-<button
-             onClick={() => setIsModalOpen(false)}
-             className="px-4 py-2 font-bold text-white bg-blue-500 rounded hover:bg-blue-600"
-           >
-             Add More Items
-           </button>
-        </div>
-      </div>
-    </div>
-  ) : null;
+  const currentItemRequired = queuedItems.length === 0 || hasCurrentItemFields();
+  const submitItemCount =
+    queuedItems.length + (hasCurrentItemFields() ? 1 : 0);
 
   return (
     <div className="container flex items-center justify-center min-h-screen p-5">
@@ -188,13 +266,13 @@ function ReportMissingContent() {
                     Order #{item.order_number} -{" "}
                     {item.description.substring(0, 30)}...
                   </span>
-<button
-                     type="button"
-                     onClick={() => removeQueuedItem(index)}
-                     className="px-2 py-1 text-xs text-white bg-red-500 rounded hover:bg-red-600"
-                   >
-                     Remove
-                   </button>
+                  <button
+                    type="button"
+                    onClick={() => removeQueuedItem(index)}
+                    className="px-2 py-1 text-xs text-white bg-red-500 rounded hover:bg-red-600"
+                  >
+                    Remove
+                  </button>
                 </div>
               ))}
             </div>
@@ -219,7 +297,7 @@ function ReportMissingContent() {
                   onChange={handleChange}
                   className="w-full p-2 text-white bg-gray-700 border border-gray-600 rounded"
                 >
-                  <option value="default" disabled>
+                  <option value="" disabled>
                     -- Select a Company --
                   </option>
                   <option value="tackle">Tackle Warehouse</option>
@@ -291,7 +369,7 @@ function ReportMissingContent() {
               value={formData.order_number}
               onChange={handleChange}
               className="w-full p-2 text-white placeholder-gray-400 bg-gray-700 border border-gray-600 rounded"
-              required
+              required={currentItemRequired}
             />
           </div>
           <div className="mb-4">
@@ -309,7 +387,7 @@ function ReportMissingContent() {
               value={formData.cart_location}
               onChange={handleChange}
               className="w-full p-2 text-white placeholder-gray-400 bg-gray-700 border border-gray-600 rounded"
-              required
+              required={currentItemRequired}
             />
           </div>
           <div className="mb-4">
@@ -327,7 +405,7 @@ function ReportMissingContent() {
               value={formData.bin_location}
               onChange={handleChange}
               className="w-full p-2 text-white placeholder-gray-400 uppercase bg-gray-700 border border-gray-600 rounded"
-              required
+              required={currentItemRequired}
             />
           </div>
           <div className="mb-4">
@@ -345,7 +423,7 @@ function ReportMissingContent() {
               value={formData.on_hand_qty}
               onChange={handleChange}
               className="w-full p-2 text-white placeholder-gray-400 bg-gray-700 border border-gray-600 rounded"
-              required
+              required={currentItemRequired}
             />
           </div>
           <div className="mb-4">
@@ -363,7 +441,7 @@ function ReportMissingContent() {
               value={formData.qty_missing}
               onChange={handleChange}
               className="w-full p-2 text-white placeholder-gray-400 bg-gray-700 border border-gray-600 rounded"
-              required
+              required={currentItemRequired}
             />
           </div>
           <div className="mb-4">
@@ -380,30 +458,43 @@ function ReportMissingContent() {
               value={formData.description}
               onChange={handleChange}
               className="w-full p-2 border border-gray-600 rounded bg-gray-700 text-white placeholder-gray-400 min-h-[100px]"
-              required
+              required={currentItemRequired}
             />
           </div>
           <div className="flex justify-end space-x-2">
-<button
-               type="button"
-               onClick={addItem}
-               className="px-4 py-2 font-bold text-white bg-green-500 rounded hover:bg-green-600"
-             >
-               Add Item
-             </button>
-             <button
-               type="submit"
-               className="px-4 py-2 font-bold text-white bg-red-500 rounded hover:bg-red-600"
-             >
-               Submit
-               {queuedItems.length > 0 ? ` All (${queuedItems.length + 1})` : ""}
-             </button>
+            <button
+              type="button"
+              onClick={addItem}
+              className="px-4 py-2 font-bold text-white bg-green-500 rounded hover:bg-green-600"
+            >
+              Add Item
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 font-bold text-white bg-red-500 rounded hover:bg-red-600"
+            >
+              Submit
+              {queuedItems.length > 0 ? ` All (${submitItemCount})` : ""}
+            </button>
           </div>
         </form>
       </div>
-      {typeof window !== "undefined" &&
-        modalContent &&
-        createPortal(modalContent, document.body)}
+      <Modal
+        isOpen={isModalOpen}
+        title="Items Submitted"
+        onClose={() => setIsModalOpen(false)}
+        footer={
+          <button
+            type="button"
+            onClick={() => setIsModalOpen(false)}
+            className="px-4 py-2 font-bold text-white bg-blue-500 rounded hover:bg-blue-600"
+          >
+            Add More Items
+          </button>
+        }
+      >
+        All missing items reported successfully!
+      </Modal>
     </div>
   );
 }

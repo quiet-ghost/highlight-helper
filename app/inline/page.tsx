@@ -1,27 +1,18 @@
 "use client";
 import Head from "next/head";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Controls from "../../components/Controls";
 import {
   CartItem,
   inlineCarts as initialInlineList,
 } from "../../lib/inlineCarts";
+import { useDarkMode } from "../../lib/useDarkMode";
 
 export default function Inline() {
   const [cartInput, setCartInput] = useState<string>("");
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
-  const [mounted, setMounted] = useState<boolean>(false);
+  const { isDarkMode, mounted, toggleDarkMode } = useDarkMode();
   const [inlineCarts, setInlineList] = useState<CartItem[]>(initialInlineList);
-
-  useEffect(() => {
-    const darkModeEnabled = localStorage.getItem("dark-mode") === "enabled";
-    setIsDarkMode(darkModeEnabled);
-    if (darkModeEnabled) {
-      document.documentElement.classList.add("dark");
-    }
-    setMounted(true);
-  }, []);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -67,19 +58,6 @@ export default function Inline() {
     );
   };
 
-  const toggleDarkMode = () => {
-    setIsDarkMode((prev) => {
-      const newMode = !prev;
-      localStorage.setItem("dark-mode", newMode ? "enabled" : "disabled");
-      if (newMode) {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
-      return newMode;
-    });
-  };
-
   const renderItemText = (item: CartItem) =>
     item.count > 1 ? `${item.originalText} x${item.count}` : item.originalText;
 
@@ -93,7 +71,7 @@ export default function Inline() {
         <title>Highlight Helper - Inline Warehouse</title>
       </Head>
       <div
-        className={`running-theme container p-5 ${isDarkMode ? "dark" : ""}`}
+        className={`inline-theme container p-5 ${isDarkMode ? "dark" : ""}`}
       >
         <header className="mb-5 text-center">
           <h1 className="text-3xl font-bold text-black dark:text-white">

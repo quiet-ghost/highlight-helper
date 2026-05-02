@@ -1,9 +1,6 @@
-export interface CartItem {
-  id: string;
-  number: string;
-  count: number;
-  originalText: string;
-}
+import { CartItem } from "./carts";
+
+export type { CartItem };
 export const bulkyList: CartItem[] = [
   { id: "B1", number: "200", count: 0, originalText: "200" },
   { id: "B3", number: "201", count: 0, originalText: "201" },

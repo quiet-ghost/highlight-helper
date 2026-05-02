@@ -6,11 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",
-    "next": "15.5.9",
+    "next": "^15.5.9",
     "react": "19.1.2",
     "react-dom": "19.1.2"
   },
