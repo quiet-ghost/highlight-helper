@@ -3,7 +3,7 @@
 
 import Head from "next/head";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Controls from "../../components/Controls";
 import {
   CartItem,
@@ -13,11 +13,11 @@ import {
   rodCartsList as initialRodCartsList,
   smallsList as initialSmallsList,
 } from "../../lib/tacCarts";
+import { useDarkMode } from "../../lib/useDarkMode";
 
 export default function Tackle() {
   const [cartInput, setCartInput] = useState<string>("");
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
-  const [mounted, setMounted] = useState<boolean>(false);
+  const { isDarkMode, mounted, toggleDarkMode } = useDarkMode();
   const [bulkyList, setBulkyList] = useState<CartItem[]>(initialBulkyList);
   const [smallsList, setSmallsList] = useState<CartItem[]>(initialSmallsList);
   const [hugeList, setHugeList] = useState<CartItem[]>(initialHugeList);
@@ -40,15 +40,6 @@ export default function Tackle() {
     setRodCartsList,
     setRodBoxesList,
   ];
-
-  useEffect(() => {
-    const darkModeEnabled = localStorage.getItem("dark-mode") === "enabled";
-    setIsDarkMode(darkModeEnabled);
-    if (darkModeEnabled) {
-      document.documentElement.classList.add("dark");
-    }
-    setMounted(true);
-  }, []);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -96,19 +87,6 @@ export default function Tackle() {
     setAllLists.forEach((setList) =>
       setList((prevList) => prevList.map((item) => ({ ...item, count: 0 }))),
     );
-  };
-
-  const toggleDarkMode = () => {
-    setIsDarkMode((prev) => {
-      const newMode = !prev;
-      localStorage.setItem("dark-mode", newMode ? "enabled" : "disabled");
-      if (newMode) {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
-      return newMode;
-    });
   };
 
   const renderItemText = (item: CartItem) =>

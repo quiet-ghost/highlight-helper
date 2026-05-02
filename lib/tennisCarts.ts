@@ -1,9 +1,6 @@
-export interface CartItem {
-  id: string;
-  number: string;
-  count: number;
-  originalText: string;
-}
+import { CartItem } from "./carts";
+
+export type { CartItem };
 export const tennisCarts: CartItem[] = [
   { id: "T1", number: "100", count: 0, originalText: "100" },
   { id: "T2", number: "101", count: 0, originalText: "101" },

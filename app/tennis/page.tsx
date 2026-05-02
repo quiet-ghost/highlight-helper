@@ -2,31 +2,22 @@
 "use client";
 import Head from "next/head";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Controls from "../../components/Controls";
 import {
   CartItem,
   tennisCarts as initialTennisCarts,
 } from "../../lib/tennisCarts";
+import { useDarkMode } from "../../lib/useDarkMode";
 
 export default function Tennis() {
   const [cartInput, setCartInput] = useState<string>("");
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
-  const [mounted, setMounted] = useState<boolean>(false);
+  const { isDarkMode, mounted, toggleDarkMode } = useDarkMode();
   const [tennisCarts, setTennisCarts] =
     useState<CartItem[]>(initialTennisCarts);
 
   const allLists = [tennisCarts];
   const setAllLists = [setTennisCarts];
-
-  useEffect(() => {
-    const darkModeEnabled = localStorage.getItem("dark-mode") === "enabled";
-    setIsDarkMode(darkModeEnabled);
-    if (darkModeEnabled) {
-      document.documentElement.classList.add("dark");
-    }
-    setMounted(true);
-  }, []);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -76,19 +67,6 @@ export default function Tennis() {
     );
   };
 
-  const toggleDarkMode = () => {
-    setIsDarkMode((prev) => {
-      const newMode = !prev;
-      localStorage.setItem("dark-mode", newMode ? "enabled" : "disabled");
-      if (newMode) {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
-      return newMode;
-    });
-  };
-
   const renderItemText = (item: CartItem) =>
     item.count > 1 ? `${item.originalText} x${item.count}` : item.originalText;
 
@@ -111,7 +89,7 @@ export default function Tennis() {
         </header>
 
         <div className="flex justify-end mb-4">
-          <Link href="/report-missing?pageType=tackle">
+          <Link href="/report-missing?pageType=tennis">
             <button className="bg-red-500 text-white px-4 py-2 rounded font-bold hover:bg-red-600">
               Report Missing
             </button>

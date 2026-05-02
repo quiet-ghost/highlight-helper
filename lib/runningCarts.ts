@@ -1,9 +1,6 @@
-export interface CartItem {
-  id: string;
-  number: string;
-  count: number;
-  originalText: string;
-}
+import { CartItem } from "./carts";
+
+export type { CartItem };
 export const runningList: CartItem[] = [
     { id: "R1", number: "105", count: 0, originalText: '105' },
     { id: "R2", number: "110", count: 0, originalText: '110' },

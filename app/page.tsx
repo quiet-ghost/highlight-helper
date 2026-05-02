@@ -1,31 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useDarkMode } from "../lib/useDarkMode";
 
 export default function Home() {
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
-
-  useEffect(() => {
-    const darkModeEnabled = localStorage.getItem("dark-mode") === "enabled";
-    setIsDarkMode(darkModeEnabled);
-    if (darkModeEnabled) {
-      document.documentElement.classList.add("dark");
-    }
-  }, []);
-
-  const toggleDarkMode = () => {
-    setIsDarkMode((prev) => {
-      const newMode = !prev;
-      localStorage.setItem("dark-mode", newMode ? "enabled" : "disabled");
-      if (newMode) {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
-      return newMode;
-    });
-  };
+  const { isDarkMode, toggleDarkMode } = useDarkMode();
 
   return (
     <div className="container p-5">
