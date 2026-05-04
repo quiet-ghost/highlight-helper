@@ -62,7 +62,12 @@ function parseNullableString(value: unknown) {
 }
 
 function parseNumber(value: unknown) {
-  return typeof value === "number" ? value : 0;
+  if (typeof value === "number") return value;
+  if (typeof value === "string" && value.trim().length > 0) {
+    const numberValue = Number(value);
+    return Number.isFinite(numberValue) ? numberValue : 0;
+  }
+  return 0;
 }
 
 function parseBoolean(value: unknown) {
