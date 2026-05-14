@@ -1,15 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Login from "../../../components/Login";
 import Modal from "../../../components/Modal";
 import {
+  AdminDashboardView,
+  AdminSortDirection,
+  AdminSortField,
+  AdminStatusFilter,
+  AdminWarehouseSummary,
   AdminWorkflowStatus,
   deriveAdminWorkflowStatus,
   getAdminClearedMissingItems,
-  getAdminMissingItems,
-  summarizeAdminMissingItems,
+  getAdminMissingItemsPage,
+  getAdminWarehouseSummaries,
 } from "../../../lib/adminMissingItems";
 import { useAuth } from "../../../lib/authContext";
 import {
@@ -27,8 +32,6 @@ import { warehouseList, warehouses } from "../../../lib/warehouses";
 
 type WarehouseGroupFilter = "site:1151" | "site:1295";
 type WarehouseFilter = "all" | WarehouseGroupFilter | PageType;
-type StatusFilter = "all" | AdminWorkflowStatus;
-type DashboardView = "all" | "active" | "history";
 type AdminDialog =
   | {
       type: "clear";
@@ -66,6 +69,8 @@ const warehouseGroups: Record<WarehouseGroupFilter, PageType[]> = {
   "site:1295": ["running", "tennis"],
 };
 
+const pageSizeOptions: readonly number[] = [25, 50, 100];
+
 function getErrorMessage(error: unknown) {
   if (error instanceof Error) return error.message;
   return "Unexpected dashboard error";
@@ -84,15 +89,17 @@ function parseSingleWarehouseFilter(value: WarehouseFilter): PageType | null {
   return value;
 }
 
-function matchesWarehouseFilter(pageType: PageType, filter: WarehouseFilter) {
-  if (filter === "all") return true;
-  if (filter === "site:1151" || filter === "site:1295") {
-    return warehouseGroups[filter].includes(pageType);
+function getWarehouseFilterPageTypes(
+  value: WarehouseFilter,
+): readonly PageType[] | undefined {
+  if (value === "all") return undefined;
+  if (value === "site:1151" || value === "site:1295") {
+    return warehouseGroups[value];
   }
-  return pageType === filter;
+  return [value];
 }
 
-function parseStatusFilter(value: string): StatusFilter {
+function parseStatusFilter(value: string): AdminStatusFilter {
   if (
     value === "new" ||
     value === "in_progress" ||
@@ -105,9 +112,17 @@ function parseStatusFilter(value: string): StatusFilter {
   return "all";
 }
 
-function parseDashboardView(value: string): DashboardView {
+function parseDashboardView(value: string): AdminDashboardView {
   if (value === "active" || value === "history") return value;
   return "all";
+}
+
+function parsePageSize(value: string) {
+  const nextPageSize = Number(value);
+  if (nextPageSize === 25 || nextPageSize === 50 || nextPageSize === 100) {
+    return nextPageSize;
+  }
+  return 50;
 }
 
 function formatDate(value: string | null) {
@@ -130,60 +145,80 @@ function formatAge(value: string | null) {
   return `${hours}h`;
 }
 
-function matchesSearch(item: MissingItem, search: string) {
-  const normalizedSearch = search.trim().toLowerCase();
-  if (!normalizedSearch) return true;
-
-  return [
-    item.initials,
-    item.cart_number,
-    item.order_number,
-    item.cart_location,
-    item.bin_location,
-    item.description ?? "",
-    item.cleared_by ?? "",
-    item.clear_batch_id ?? "",
-    item.exported_by ?? "",
-    item.export_batch_id ?? "",
-    warehouses[item.page_type].label,
-  ].some((value) => value.toLowerCase().includes(normalizedSearch));
-}
-
 export default function AdminMissingItemsPage() {
   const { isAuthenticated, claims } = useAuth();
   const access = getAuthorizedWarehouseSet(claims);
-  const [activeItems, setActiveItems] = useState<MissingItem[]>([]);
-  const [clearedItems, setClearedItems] = useState<MissingItem[]>([]);
+  const [dashboardItems, setDashboardItems] = useState<MissingItem[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [summary, setSummary] = useState<AdminWarehouseSummary[]>([]);
   const [warehouseFilter, setWarehouseFilter] =
     useState<WarehouseFilter>("all");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<AdminStatusFilter>("all");
   const [search, setSearch] = useState("");
-  const [view, setView] = useState<DashboardView>("all");
+  const [view, setView] = useState<AdminDashboardView>("all");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
+  const [sortField, setSortField] = useState<AdminSortField>("timestamp");
+  const [sortDirection, setSortDirection] =
+    useState<AdminSortDirection>("desc");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dialog, setDialog] = useState<AdminDialog | null>(null);
+  const dashboardLoadIdRef = useRef(0);
 
-  const loadDashboard = async () => {
+  const loadDashboard = useCallback(async () => {
+    const loadId = dashboardLoadIdRef.current + 1;
+    dashboardLoadIdRef.current = loadId;
     setIsLoading(true);
     setError(null);
     try {
-      const [nextActiveItems, nextClearedItems] = await Promise.all([
-        getAdminMissingItems(),
-        getAdminClearedMissingItems(),
+      const [nextPage, nextSummary] = await Promise.all([
+        getAdminMissingItemsPage({
+          page,
+          pageSize,
+          view,
+          pageTypes: getWarehouseFilterPageTypes(warehouseFilter),
+          status: statusFilter,
+          search,
+          sortField,
+          sortDirection,
+        }),
+        getAdminWarehouseSummaries(),
       ]);
-      setActiveItems(nextActiveItems);
-      setClearedItems(nextClearedItems);
+
+      if (dashboardLoadIdRef.current !== loadId) return;
+
+      const totalPages = Math.max(1, Math.ceil(nextPage.totalCount / pageSize));
+      if (page > totalPages) {
+        setPage(totalPages);
+        return;
+      }
+
+      setDashboardItems(nextPage.items);
+      setTotalCount(nextPage.totalCount);
+      setSummary(nextSummary);
     } catch (loadError) {
+      if (dashboardLoadIdRef.current !== loadId) return;
       setError(getErrorMessage(loadError));
     } finally {
+      if (dashboardLoadIdRef.current !== loadId) return;
       setIsLoading(false);
     }
-  };
+  }, [
+    page,
+    pageSize,
+    view,
+    warehouseFilter,
+    statusFilter,
+    search,
+    sortField,
+    sortDirection,
+  ]);
 
   useEffect(() => {
     if (!isAuthenticated || !access.canAdmin) return;
     loadDashboard();
-  }, [access.canAdmin, isAuthenticated]);
+  }, [access.canAdmin, isAuthenticated, loadDashboard]);
 
   if (!isAuthenticated) {
     return <Login onLoginSuccess={() => {}} />;
@@ -197,31 +232,14 @@ export default function AdminMissingItemsPage() {
     );
   }
 
-  const itemsForView =
-    view === "all"
-      ? [...activeItems, ...clearedItems]
-      : view === "active"
-        ? activeItems
-        : clearedItems;
-  const visibleItems = itemsForView
-    .filter((item) => {
-      const status = deriveAdminWorkflowStatus(item);
-      return (
-        matchesWarehouseFilter(item.page_type, warehouseFilter) &&
-        (statusFilter === "all" || status === statusFilter) &&
-        matchesSearch(item, search)
-      );
-    })
-    .sort((a, b) => {
-      const aDate = a.cleared_at ?? a.timestamp;
-      const bDate = b.cleared_at ?? b.timestamp;
-      return bDate.localeCompare(aDate);
-    });
-  const summary = summarizeAdminMissingItems(activeItems, clearedItems);
+  const visibleItems = dashboardItems;
   const selectedWarehouseType = parseSingleWarehouseFilter(warehouseFilter);
   const selectedWarehouse = selectedWarehouseType
     ? warehouses[selectedWarehouseType]
     : null;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const firstVisibleRow = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
+  const lastVisibleRow = Math.min(page * pageSize, totalCount);
   const totalOpen = summary.reduce((count, row) => count + row.openCount, 0);
   const totalCompletedReady = summary.reduce(
     (count, row) => count + row.completedReadyCount,
@@ -390,6 +408,43 @@ export default function AdminMissingItemsPage() {
     });
   };
 
+  const handleSort = (field: AdminSortField) => {
+    setPage(1);
+    if (sortField === field) {
+      setSortDirection((currentDirection) =>
+        currentDirection === "asc" ? "desc" : "asc",
+      );
+      return;
+    }
+
+    setSortField(field);
+    setSortDirection("asc");
+  };
+
+  const renderHeader = (label: string, field?: AdminSortField) => {
+    if (!field) return <th className="p-2">{label}</th>;
+
+    const isActiveSort = sortField === field;
+    const sortMarker = isActiveSort
+      ? sortDirection === "asc"
+        ? " (asc)"
+        : " (desc)"
+      : "";
+
+    return (
+      <th className="p-2">
+        <button
+          type="button"
+          onClick={() => handleSort(field)}
+          className="font-semibold hover:underline"
+        >
+          {label}
+          {sortMarker}
+        </button>
+      </th>
+    );
+  };
+
   return (
     <div className="container p-5 pt-20 text-black dark:text-white">
       <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -471,7 +526,10 @@ export default function AdminMissingItemsPage() {
             View
             <select
               value={view}
-              onChange={(event) => setView(parseDashboardView(event.target.value))}
+              onChange={(event) => {
+                setView(parseDashboardView(event.target.value));
+                setPage(1);
+              }}
               className="rounded border border-gray-300 bg-white p-2 text-black dark:border-gray-600 dark:bg-gray-700 dark:text-white"
             >
               <option value="all">All Rows</option>
@@ -484,9 +542,10 @@ export default function AdminMissingItemsPage() {
             Warehouse
             <select
               value={warehouseFilter}
-              onChange={(event) =>
-                setWarehouseFilter(parseWarehouseFilter(event.target.value))
-              }
+              onChange={(event) => {
+                setWarehouseFilter(parseWarehouseFilter(event.target.value));
+                setPage(1);
+              }}
               className="rounded border border-gray-300 bg-white p-2 text-black dark:border-gray-600 dark:bg-gray-700 dark:text-white"
             >
               <option value="all">All Warehouses</option>
@@ -504,9 +563,10 @@ export default function AdminMissingItemsPage() {
             Status
             <select
               value={statusFilter}
-              onChange={(event) =>
-                setStatusFilter(parseStatusFilter(event.target.value))
-              }
+              onChange={(event) => {
+                setStatusFilter(parseStatusFilter(event.target.value));
+                setPage(1);
+              }}
               className="rounded border border-gray-300 bg-white p-2 text-black dark:border-gray-600 dark:bg-gray-700 dark:text-white"
             >
               <option value="all">All Statuses</option>
@@ -522,10 +582,31 @@ export default function AdminMissingItemsPage() {
             Search
             <input
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setPage(1);
+              }}
               placeholder="Order, cart, bin, initials, description..."
               className="rounded border border-gray-300 bg-white p-2 text-black dark:border-gray-600 dark:bg-gray-700 dark:text-white"
             />
+          </label>
+
+          <label className="flex flex-col gap-1 text-sm font-semibold">
+            Rows
+            <select
+              value={pageSize}
+              onChange={(event) => {
+                setPageSize(parsePageSize(event.target.value));
+                setPage(1);
+              }}
+              className="rounded border border-gray-300 bg-white p-2 text-black dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            >
+              {pageSizeOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
           </label>
         </div>
 
@@ -565,23 +646,52 @@ export default function AdminMissingItemsPage() {
         </div>
       </div>
 
+      <div className="mb-3 flex flex-col gap-2 rounded-lg bg-white p-3 text-sm shadow dark:bg-gray-800 md:flex-row md:items-center md:justify-between">
+        <p>
+          Showing {firstVisibleRow}-{lastVisibleRow} of {totalCount} rows
+        </p>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setPage((currentPage) => Math.max(1, currentPage - 1))}
+            disabled={page <= 1 || isLoading}
+            className="rounded bg-gray-200 px-3 py-1 font-semibold text-black hover:bg-gray-300 disabled:opacity-50 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
+          >
+            Previous
+          </button>
+          <span>
+            Page {page} of {totalPages}
+          </span>
+          <button
+            type="button"
+            onClick={() =>
+              setPage((currentPage) => Math.min(totalPages, currentPage + 1))
+            }
+            disabled={page >= totalPages || isLoading}
+            className="rounded bg-gray-200 px-3 py-1 font-semibold text-black hover:bg-gray-300 disabled:opacity-50 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+
       <div className="overflow-x-auto rounded-lg bg-white shadow dark:bg-gray-800">
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="bg-gray-200 text-left dark:bg-gray-700">
-              <th className="p-2">Warehouse</th>
+              {renderHeader("Warehouse", "page_type")}
               <th className="p-2">Status</th>
-              <th className="p-2">Reported</th>
-              <th className="p-2">Age</th>
-              <th className="p-2">Initials</th>
-              <th className="p-2">Description</th>
-              <th className="p-2">Cart</th>
-              <th className="p-2">Order</th>
-              <th className="p-2">Bin</th>
-              <th className="p-2">Qty</th>
-              <th className="p-2">Cleared</th>
-              <th className="p-2">Downloaded</th>
-              <th className="p-2">Actions</th>
+              {renderHeader("Reported", "timestamp")}
+              {renderHeader("Age")}
+              {renderHeader("Initials", "initials")}
+              {renderHeader("Description", "description")}
+              {renderHeader("Cart", "cart_number")}
+              {renderHeader("Order", "order_number")}
+              {renderHeader("Bin", "bin_location")}
+              {renderHeader("Qty", "qty_missing")}
+              {renderHeader("Cleared", "cleared_at")}
+              {renderHeader("Downloaded", "exported_at")}
+              {renderHeader("Actions")}
             </tr>
           </thead>
           <tbody>
