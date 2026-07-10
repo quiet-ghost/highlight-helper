@@ -1,4 +1,4 @@
-import { MissingItem, PageType } from "./missingItems";
+import type { MissingItem, PageType } from "./missingItems";
 
 const exportColumns: Array<{ key: keyof MissingItem; label: string }> = [
   { key: "id", label: "id" },
@@ -25,12 +25,21 @@ const exportColumns: Array<{ key: keyof MissingItem; label: string }> = [
   { key: "export_batch_id", label: "export_batch_id" },
 ];
 
+interface MissingItemsExportContext {
+  clearedAt?: string;
+  clearBatchId?: string;
+  exportedAt?: string;
+  exportBatchId?: string;
+  filenameLabel?: string;
+}
+
 function formatCsvCell(value: MissingItem[keyof MissingItem]) {
   if (value === null || value === undefined) return "";
   const stringValue = String(value);
-  const spreadsheetSafeValue = /^[=+\-@]/.test(stringValue)
-    ? `'${stringValue}`
-    : stringValue;
+  const spreadsheetSafeValue =
+    typeof value === "string" && /^[=+\-@]/.test(stringValue)
+      ? `'${stringValue}`
+      : stringValue;
   if (
     spreadsheetSafeValue.includes('"') ||
     spreadsheetSafeValue.includes(",") ||
@@ -46,25 +55,10 @@ function toTimestampSlug(date: Date) {
   return date.toISOString().replace(/[:.]/g, "-");
 }
 
-export function downloadMissingItemsCsv(
-  pageType: PageType,
+export function createMissingItemsCsv(
   items: MissingItem[],
-  exportContext?: {
-    clearedAt?: string;
-    clearBatchId?: string;
-    exportedAt?: string;
-    exportBatchId?: string;
-    filenameLabel?: string;
-  },
+  exportContext?: MissingItemsExportContext,
 ) {
-  const now = new Date();
-  const filenameParts = [
-    "missing-items",
-    pageType,
-    exportContext?.filenameLabel,
-    toTimestampSlug(now),
-  ].filter((part): part is string => typeof part === "string");
-  const filename = `${filenameParts.join("-")}.csv`;
   const rows = [
     exportColumns.map((column) => column.label).join(","),
     ...items.map((item) =>
@@ -88,7 +82,24 @@ export function downloadMissingItemsCsv(
     ),
   ];
 
-  const blob = new Blob([`${rows.join("\n")}\n`], {
+  return `${rows.join("\n")}\n`;
+}
+
+export function downloadMissingItemsCsv(
+  pageType: PageType,
+  items: MissingItem[],
+  exportContext?: MissingItemsExportContext,
+) {
+  const now = new Date();
+  const filenameParts = [
+    "missing-items",
+    pageType,
+    exportContext?.filenameLabel,
+    toTimestampSlug(now),
+  ].filter((part): part is string => typeof part === "string");
+  const filename = `${filenameParts.join("-")}.csv`;
+
+  const blob = new Blob([createMissingItemsCsv(items, exportContext)], {
     type: "text/csv;charset=utf-8",
   });
   const url = URL.createObjectURL(blob);

@@ -11,7 +11,7 @@ import { useDarkMode } from "../../lib/useDarkMode";
 
 export default function Inline() {
   const [cartInput, setCartInput] = useState<string>("");
-  const { isDarkMode, mounted, toggleDarkMode } = useDarkMode();
+  const { isDarkMode, toggleDarkMode } = useDarkMode();
   const [inlineCarts, setInlineList] = useState<CartItem[]>(initialInlineList);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -60,8 +60,6 @@ export default function Inline() {
 
   const renderItemText = (item: CartItem) =>
     item.count > 1 ? `${item.originalText} x${item.count}` : item.originalText;
-
-  if (!mounted) return null;
 
   return (
     <>

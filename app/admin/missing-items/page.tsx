@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Login from "../../../components/Login";
 import Modal from "../../../components/Modal";
 import {
+  AdminMissingItem,
   AdminDashboardView,
   AdminSortDirection,
   AdminSortField,
@@ -22,7 +23,6 @@ import {
   deleteDownloadedMissingItems,
   getCompletedMissingItems,
   markMissingItemsExported,
-  MissingItem,
   PageType,
   restoreMissingItems,
 } from "../../../lib/missingItems";
@@ -73,6 +73,10 @@ const pageSizeOptions: readonly number[] = [25, 50, 100];
 
 function getErrorMessage(error: unknown) {
   if (error instanceof Error) return error.message;
+  if (typeof error === "object" && error !== null && "message" in error) {
+    const message = error.message;
+    if (typeof message === "string") return message;
+  }
   return "Unexpected dashboard error";
 }
 
@@ -148,13 +152,14 @@ function formatAge(value: string | null) {
 export default function AdminMissingItemsPage() {
   const { isAuthenticated, claims } = useAuth();
   const access = getAuthorizedWarehouseSet(claims);
-  const [dashboardItems, setDashboardItems] = useState<MissingItem[]>([]);
+  const [dashboardItems, setDashboardItems] = useState<AdminMissingItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [summary, setSummary] = useState<AdminWarehouseSummary[]>([]);
   const [warehouseFilter, setWarehouseFilter] =
     useState<WarehouseFilter>("all");
   const [statusFilter, setStatusFilter] = useState<AdminStatusFilter>("all");
   const [search, setSearch] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [view, setView] = useState<AdminDashboardView>("all");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
@@ -162,31 +167,39 @@ export default function AdminMissingItemsPage() {
   const [sortDirection, setSortDirection] =
     useState<AdminSortDirection>("desc");
   const [isLoading, setIsLoading] = useState(false);
+  const [isSummaryLoading, setIsSummaryLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pageError, setPageError] = useState<string | null>(null);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
   const [dialog, setDialog] = useState<AdminDialog | null>(null);
-  const dashboardLoadIdRef = useRef(0);
+  const pageLoadIdRef = useRef(0);
+  const summaryLoadIdRef = useRef(0);
+  const pageAbortRef = useRef<AbortController | null>(null);
+  const summaryAbortRef = useRef<AbortController | null>(null);
 
-  const loadDashboard = useCallback(async () => {
-    const loadId = dashboardLoadIdRef.current + 1;
-    dashboardLoadIdRef.current = loadId;
+  const loadDashboardPage = useCallback(async () => {
+    pageAbortRef.current?.abort();
+    const controller = new AbortController();
+    pageAbortRef.current = controller;
+    const loadId = pageLoadIdRef.current + 1;
+    pageLoadIdRef.current = loadId;
     setIsLoading(true);
-    setError(null);
     try {
-      const [nextPage, nextSummary] = await Promise.all([
-        getAdminMissingItemsPage({
+      const nextPage = await getAdminMissingItemsPage(
+        {
           page,
           pageSize,
           view,
           pageTypes: getWarehouseFilterPageTypes(warehouseFilter),
           status: statusFilter,
-          search,
+          search: searchQuery,
           sortField,
           sortDirection,
-        }),
-        getAdminWarehouseSummaries(),
-      ]);
+        },
+        controller.signal,
+      );
 
-      if (dashboardLoadIdRef.current !== loadId) return;
+      if (controller.signal.aborted || pageLoadIdRef.current !== loadId) return;
 
       const totalPages = Math.max(1, Math.ceil(nextPage.totalCount / pageSize));
       if (page > totalPages) {
@@ -196,12 +209,12 @@ export default function AdminMissingItemsPage() {
 
       setDashboardItems(nextPage.items);
       setTotalCount(nextPage.totalCount);
-      setSummary(nextSummary);
+      setPageError(null);
     } catch (loadError) {
-      if (dashboardLoadIdRef.current !== loadId) return;
-      setError(getErrorMessage(loadError));
+      if (controller.signal.aborted || pageLoadIdRef.current !== loadId) return;
+      setPageError(getErrorMessage(loadError));
     } finally {
-      if (dashboardLoadIdRef.current !== loadId) return;
+      if (controller.signal.aborted || pageLoadIdRef.current !== loadId) return;
       setIsLoading(false);
     }
   }, [
@@ -210,15 +223,56 @@ export default function AdminMissingItemsPage() {
     view,
     warehouseFilter,
     statusFilter,
-    search,
+    searchQuery,
     sortField,
     sortDirection,
   ]);
 
+  const loadSummary = useCallback(async () => {
+    summaryAbortRef.current?.abort();
+    const controller = new AbortController();
+    summaryAbortRef.current = controller;
+    const loadId = summaryLoadIdRef.current + 1;
+    summaryLoadIdRef.current = loadId;
+    setIsSummaryLoading(true);
+    try {
+      const nextSummary = await getAdminWarehouseSummaries(controller.signal);
+      if (controller.signal.aborted || summaryLoadIdRef.current !== loadId) return;
+      setSummary(nextSummary);
+      setSummaryError(null);
+    } catch (loadError) {
+      if (controller.signal.aborted || summaryLoadIdRef.current !== loadId) return;
+      setSummaryError(getErrorMessage(loadError));
+    } finally {
+      if (controller.signal.aborted || summaryLoadIdRef.current !== loadId) return;
+      setIsSummaryLoading(false);
+    }
+  }, []);
+
+  const refreshDashboard = useCallback(async () => {
+    setError(null);
+    await Promise.all([loadDashboardPage(), loadSummary()]);
+  }, [loadDashboardPage, loadSummary]);
+
   useEffect(() => {
     if (!isAuthenticated || !access.canAdmin) return;
-    loadDashboard();
-  }, [access.canAdmin, isAuthenticated, loadDashboard]);
+    void loadDashboardPage();
+    return () => pageAbortRef.current?.abort();
+  }, [access.canAdmin, isAuthenticated, loadDashboardPage]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !access.canAdmin) return;
+    void loadSummary();
+    return () => summaryAbortRef.current?.abort();
+  }, [access.canAdmin, isAuthenticated, loadSummary]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPage(1);
+      setSearchQuery(search);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   if (!isAuthenticated) {
     return <Login onLoginSuccess={() => {}} />;
@@ -394,13 +448,13 @@ export default function AdminMissingItemsPage() {
         );
       }
       setDialog(null);
-      await loadDashboard();
+      await refreshDashboard();
     } catch (actionError) {
       setError(getErrorMessage(actionError));
     }
   };
 
-  const openRestoreDialog = (item: MissingItem) => {
+  const openRestoreDialog = (item: AdminMissingItem) => {
     setDialog({
       type: "restore",
       pageType: item.page_type,
@@ -461,11 +515,11 @@ export default function AdminMissingItemsPage() {
         <div className="flex gap-2">
           <button
             type="button"
-            onClick={loadDashboard}
-            disabled={isLoading}
+            onClick={() => void refreshDashboard()}
+            disabled={isLoading || isSummaryLoading}
             className="rounded bg-gray-700 px-4 py-2 font-bold text-white hover:bg-gray-800 disabled:opacity-60"
           >
-            {isLoading ? "Refreshing..." : "Refresh"}
+            {isLoading || isSummaryLoading ? "Refreshing..." : "Refresh"}
           </button>
           <Link href="/">
             <button className="rounded bg-gray-500 px-4 py-2 font-bold text-white hover:bg-gray-600">
@@ -475,11 +529,16 @@ export default function AdminMissingItemsPage() {
         </div>
       </div>
 
-      {error && (
-        <div className="mb-4 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-200">
-          {error}
-        </div>
-      )}
+      {[error, pageError, summaryError]
+        .filter((message): message is string => message !== null)
+        .map((message) => (
+          <div
+            key={message}
+            className="mb-4 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-200"
+          >
+            {message}
+          </div>
+        ))}
 
       <div className="mb-6 grid grid-cols-1 gap-3 md:grid-cols-4">
         <div className="rounded-lg bg-white p-4 shadow dark:bg-gray-800">
@@ -505,6 +564,11 @@ export default function AdminMissingItemsPage() {
       </div>
 
       <div className="mb-6 grid grid-cols-1 gap-3 md:grid-cols-4">
+        {isSummaryLoading && summary.length === 0 && (
+          <p className="text-sm text-gray-500 dark:text-gray-400 md:col-span-4">
+            Loading warehouse summaries...
+          </p>
+        )}
         {summary.map((row) => (
           <div
             key={row.pageType}
@@ -583,8 +647,8 @@ export default function AdminMissingItemsPage() {
             <input
               value={search}
               onChange={(event) => {
+                pageAbortRef.current?.abort();
                 setSearch(event.target.value);
-                setPage(1);
               }}
               placeholder="Order, cart, bin, initials, description..."
               className="rounded border border-gray-300 bg-white p-2 text-black dark:border-gray-600 dark:bg-gray-700 dark:text-white"

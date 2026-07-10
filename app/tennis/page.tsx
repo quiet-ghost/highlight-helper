@@ -12,7 +12,7 @@ import { useDarkMode } from "../../lib/useDarkMode";
 
 export default function Tennis() {
   const [cartInput, setCartInput] = useState<string>("");
-  const { isDarkMode, mounted, toggleDarkMode } = useDarkMode();
+  const { isDarkMode, toggleDarkMode } = useDarkMode();
   const [tennisCarts, setTennisCarts] =
     useState<CartItem[]>(initialTennisCarts);
 
@@ -69,10 +69,6 @@ export default function Tennis() {
 
   const renderItemText = (item: CartItem) =>
     item.count > 1 ? `${item.originalText} x${item.count}` : item.originalText;
-
-  if (!mounted) {
-    return null;
-  }
 
   return (
     <>

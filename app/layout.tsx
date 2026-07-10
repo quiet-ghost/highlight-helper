@@ -13,7 +13,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              'try{if(localStorage.getItem("dark-mode")==="enabled")document.documentElement.classList.add("dark")}catch{}',
+          }}
+        />
+      </head>
       <body>
         <ClientBody>{children}</ClientBody>
       </body>

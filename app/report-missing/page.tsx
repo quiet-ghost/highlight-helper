@@ -8,8 +8,9 @@ import {
   PageType,
   saveMissingItems,
 } from "../../lib/missingItems";
+import { MissingItemQuantities } from "../../lib/missingItemQuantities";
 
-interface QueuedItem {
+interface ItemFormData {
   order_number: string;
   cart_location: string;
   bin_location: string;
@@ -18,7 +19,12 @@ interface QueuedItem {
   description: string;
 }
 
-interface ReportFormData extends QueuedItem {
+interface QueuedItem extends Omit<ItemFormData, "on_hand_qty" | "qty_missing"> {
+  on_hand_qty: number;
+  qty_missing: number;
+}
+
+interface ReportFormData extends ItemFormData {
   initials: string;
   cart_number: string;
   page_type: PageType | "";
@@ -98,12 +104,6 @@ function ReportMissingContent() {
       return "Enter a cart position before adding items.";
     }
     if (!isFilled(formData.bin_location)) return "Enter a bin before adding items.";
-    if (!isFilled(formData.on_hand_qty)) {
-      return "Enter an on hand quantity before adding items.";
-    }
-    if (!isFilled(formData.qty_missing)) {
-      return "Enter a quantity missing before adding items.";
-    }
     if (!isFilled(formData.description)) {
       return "Enter an item description before adding items.";
     }
@@ -117,13 +117,19 @@ function ReportMissingContent() {
       return;
     }
 
+    const quantities = MissingItemQuantities.parse(formData);
+    if (!quantities.ok) {
+      setError(quantities.error.message);
+      return;
+    }
+
     // Queue the current item
     const newItem: QueuedItem = {
       order_number: formData.order_number,
       cart_location: formData.cart_location,
       bin_location: formData.bin_location,
-      on_hand_qty: formData.on_hand_qty,
-      qty_missing: formData.qty_missing,
+      on_hand_qty: quantities.value.on_hand_qty,
+      qty_missing: quantities.value.qty_missing,
       description: formData.description,
     };
 
@@ -167,44 +173,42 @@ function ReportMissingContent() {
         return;
       }
 
+      let currentItem: QueuedItem | null = null;
       if (hasCurrentItem) {
         const validationError = validateItemFields();
         if (validationError) {
           setError(validationError);
           return;
         }
+
+        const quantities = MissingItemQuantities.parse(formData);
+        if (!quantities.ok) {
+          setError(quantities.error.message);
+          return;
+        }
+
+        currentItem = {
+          order_number: formData.order_number,
+          cart_location: formData.cart_location,
+          bin_location: formData.bin_location,
+          on_hand_qty: quantities.value.on_hand_qty,
+          qty_missing: quantities.value.qty_missing,
+          description: formData.description,
+        };
       }
 
       const pageType = formData.page_type;
-
-      const currentItems: NewMissingItem[] = hasCurrentItem
-        ? [
-            {
-              initials: formData.initials,
-              cart_number: formData.cart_number,
-              order_number: formData.order_number,
-              cart_location: formData.cart_location,
-              bin_location: formData.bin_location,
-              on_hand_qty: parseInt(formData.on_hand_qty) || 0,
-              qty_missing: parseInt(formData.qty_missing) || 0,
-              description: formData.description || undefined,
-              page_type: pageType,
-              on_cart: false,
-              looked_for: false,
-              fulf_1: false,
-              fulf_2: false,
-            },
-          ]
-        : [];
-
-      const queuedMissingItems: NewMissingItem[] = queuedItems.map((item) => ({
+      const itemsToSubmit = currentItem
+        ? [currentItem, ...queuedItems]
+        : queuedItems;
+      const missingItems: NewMissingItem[] = itemsToSubmit.map((item) => ({
         initials: formData.initials,
         cart_number: formData.cart_number,
         order_number: item.order_number,
         cart_location: item.cart_location,
         bin_location: item.bin_location,
-        on_hand_qty: parseInt(item.on_hand_qty) || 0,
-        qty_missing: parseInt(item.qty_missing) || 0,
+        on_hand_qty: item.on_hand_qty,
+        qty_missing: item.qty_missing,
         description: item.description || undefined,
         page_type: pageType,
         on_cart: false,
@@ -213,7 +217,7 @@ function ReportMissingContent() {
         fulf_2: false,
       }));
 
-      await saveMissingItems([...currentItems, ...queuedMissingItems]);
+      await saveMissingItems(missingItems);
 
       // Reset form
       setFormData({
@@ -422,6 +426,7 @@ function ReportMissingContent() {
               placeholder="Enter on hand quantity"
               value={formData.on_hand_qty}
               onChange={handleChange}
+              step="1"
               className="w-full p-2 text-white placeholder-gray-400 bg-gray-700 border border-gray-600 rounded"
               required={currentItemRequired}
             />
@@ -440,6 +445,8 @@ function ReportMissingContent() {
               placeholder="Enter quantity missing"
               value={formData.qty_missing}
               onChange={handleChange}
+              min="1"
+              step="1"
               className="w-full p-2 text-white placeholder-gray-400 bg-gray-700 border border-gray-600 rounded"
               required={currentItemRequired}
             />

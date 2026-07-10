@@ -1,27 +1,34 @@
 "use client";
 
 import Link from "next/link";
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import Login from "./Login";
 import Modal from "./Modal";
 import { useAuth } from "../lib/authContext";
 import {
   clearMissingItems,
   getCompletedMissingItems,
-  getMissingItems,
+  getMissingItemsPage,
   MissingItem,
+  MissingItemCheckboxKey,
   PageType,
   parseMissingItemRow,
   updateMissingItem,
 } from "../lib/missingItems";
+import {
+  MissingItemQueueChange,
+  reconcileMissingItemQueue,
+} from "../lib/missingItemQueue";
 import { downloadMissingItemsCsv } from "../lib/missingItemsExport";
 import { canAccessWarehouse, canExportWarehouse } from "../lib/roles";
 import { supabase } from "../lib/supabaseClient";
 import { useDarkMode } from "../lib/useDarkMode";
 
 type SortDirection = "asc" | "desc";
-type CheckboxKey = "completed" | "on_cart" | "looked_for" | "fulf_1" | "fulf_2";
+type CheckboxKey = MissingItemCheckboxKey;
 type FieldKey = Exclude<keyof MissingItem, CheckboxKey>;
+type QueueLoadState = "loading" | "ready" | "error";
+type RealtimeState = "connecting" | "live" | "degraded";
 type MissingItemsDialog =
   | { type: "empty-clear" }
   | { type: "empty-download" }
@@ -52,34 +59,15 @@ export interface MissingItemsPageProps {
   getRowClassName: (item: MissingItem) => string;
 }
 
-function checkboxUpdate(key: CheckboxKey, checked: boolean): Partial<MissingItem> {
-  switch (key) {
-    case "completed":
-      return { completed: checked };
-    case "on_cart":
-      return { on_cart: checked };
-    case "looked_for":
-      return { looked_for: checked };
-    case "fulf_1":
-      return { fulf_1: checked };
-    case "fulf_2":
-      return { fulf_2: checked };
+const queuePageSize = 50;
+
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "object" && error !== null && "message" in error) {
+    const message = error.message;
+    if (typeof message === "string") return message;
   }
-}
-
-function compareValues(aValue: MissingItem[keyof MissingItem], bValue: MissingItem[keyof MissingItem]) {
-  if (aValue === null || aValue === undefined) return 1;
-  if (bValue === null || bValue === undefined) return -1;
-
-  if (typeof aValue === "number" && typeof bValue === "number") {
-    return aValue - bValue;
-  }
-
-  if (typeof aValue === "boolean" && typeof bValue === "boolean") {
-    return Number(aValue) - Number(bValue);
-  }
-
-  return String(aValue).localeCompare(String(bValue));
+  return "An unexpected queue error occurred.";
 }
 
 function renderFieldValue(item: MissingItem, column: Extract<MissingItemsColumn, { type: "field" }>) {
@@ -115,6 +103,16 @@ export default function MissingItemsPage({
   getRowClassName,
 }: MissingItemsPageProps) {
   const [missingItems, setMissingItems] = useState<MissingItem[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [queuePage, setQueuePage] = useState(1);
+  const [loadState, setLoadState] = useState<QueueLoadState>("loading");
+  const [realtimeState, setRealtimeState] =
+    useState<RealtimeState>("connecting");
+  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [pendingCheckboxes, setPendingCheckboxes] = useState<Set<string>>(
+    () => new Set(),
+  );
   const { isDarkMode } = useDarkMode();
   const [sortField, setSortField] = useState<keyof MissingItem | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
@@ -122,11 +120,121 @@ export default function MissingItemsPage({
   const { isAuthenticated, claims, logout } = useAuth();
   const canAccess = canAccessWarehouse(claims, pageType);
   const canExport = canExportWarehouse(claims, pageType);
+  const queuePageRef = useRef(queuePage);
+  const queueRequestIdRef = useRef(0);
+  const eventVersionRef = useRef(0);
+  const loadAbortRef = useRef<AbortController | null>(null);
+
+  const loadQueue = useCallback(
+    async (page: number, showLoading: boolean) => {
+      loadAbortRef.current?.abort();
+      const controller = new AbortController();
+      loadAbortRef.current = controller;
+      const requestId = queueRequestIdRef.current + 1;
+      const eventVersion = eventVersionRef.current;
+      queueRequestIdRef.current = requestId;
+
+      if (showLoading) {
+        setLoadState("loading");
+        setLoadError(null);
+        setMissingItems([]);
+      }
+      try {
+        const result = await getMissingItemsPage(
+          pageType,
+          page,
+          queuePageSize,
+          sortField ?? "timestamp",
+          sortField ? sortDirection : "desc",
+          controller.signal,
+        );
+        if (
+          controller.signal.aborted ||
+          queueRequestIdRef.current !== requestId ||
+          eventVersionRef.current !== eventVersion
+        ) {
+          return;
+        }
+
+        const totalPages = Math.max(
+          1,
+          Math.ceil(result.totalCount / queuePageSize),
+        );
+        if (page > totalPages) {
+          queuePageRef.current = totalPages;
+          setQueuePage(totalPages);
+          return;
+        }
+
+        setMissingItems(result.items);
+        setTotalCount(result.totalCount);
+        setLoadState("ready");
+        setLoadError(null);
+      } catch (loadError) {
+        if (
+          controller.signal.aborted ||
+          queueRequestIdRef.current !== requestId
+        ) {
+          return;
+        }
+        setLoadState("error");
+        setLoadError(
+          `Could not load missing items: ${getErrorMessage(loadError)}`,
+        );
+      }
+    },
+    [pageType, sortDirection, sortField],
+  );
+
+  useEffect(() => {
+    if (!isAuthenticated || !canAccess) {
+      loadAbortRef.current?.abort();
+      queueRequestIdRef.current += 1;
+      setMissingItems([]);
+      setTotalCount(0);
+      return;
+    }
+
+    queuePageRef.current = queuePage;
+    void loadQueue(queuePage, true);
+    return () => loadAbortRef.current?.abort();
+  }, [canAccess, isAuthenticated, loadQueue, queuePage]);
 
   useEffect(() => {
     if (!isAuthenticated || !canAccess) return;
 
-    getMissingItems(pageType).then((items) => setMissingItems(items));
+    let active = true;
+    let resyncTimer: ReturnType<typeof setTimeout> | null = null;
+    queuePageRef.current = 1;
+    setQueuePage(1);
+    setRealtimeState("connecting");
+
+    const scheduleResync = (delay = 150) => {
+      if (resyncTimer) clearTimeout(resyncTimer);
+      resyncTimer = setTimeout(() => {
+        if (active) void loadQueue(queuePageRef.current, false);
+      }, delay);
+    };
+
+    const applyRealtimeChange = (change: MissingItemQueueChange) => {
+      eventVersionRef.current += 1;
+      setMissingItems((items) => {
+        const changedId = change.type === "remove" ? change.id : change.item.id;
+        const isVisible = items.some((item) => item.id === changedId);
+        if (queuePageRef.current !== 1 && !isVisible) return items;
+        if (sortField !== null) {
+          if (!isVisible) return items;
+          if (change.type === "remove" || change.item.cleared_at) {
+            return items.filter((item) => item.id !== changedId);
+          }
+          return items.map((item) =>
+            item.id === changedId ? change.item : item,
+          );
+        }
+        return reconcileMissingItemQueue(items, change, queuePageSize);
+      });
+      scheduleResync();
+    };
 
     const channel = supabase
       .channel(`${pageType}-missing`)
@@ -140,8 +248,8 @@ export default function MissingItemsPage({
         },
         (payload) => {
           const item = parseMissingItemRow(payload.new);
-          if (!item) return;
-          setMissingItems((prev) => [...prev, item]);
+          if (!item || item.page_type !== pageType) return;
+          applyRealtimeChange({ type: "upsert", item });
         },
       )
       .on(
@@ -154,16 +262,8 @@ export default function MissingItemsPage({
         },
         (payload) => {
           const updatedItem = parseMissingItemRow(payload.new);
-          if (!updatedItem) return;
-
-          setMissingItems((prev) => {
-            if (updatedItem.cleared_at) {
-              return prev.filter((item) => item.id !== updatedItem.id);
-            }
-            return prev.map((item) =>
-              item.id === updatedItem.id ? updatedItem : item,
-            );
-          });
+          if (!updatedItem || updatedItem.page_type !== pageType) return;
+          applyRealtimeChange({ type: "upsert", item: updatedItem });
         },
       )
       .on(
@@ -177,55 +277,129 @@ export default function MissingItemsPage({
         (payload) => {
           const id = typeof payload.old.id === "number" ? payload.old.id : null;
           if (id === null) return;
-          setMissingItems((prev) => prev.filter((item) => item.id !== id));
+          applyRealtimeChange({ type: "remove", id });
         },
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (!active) return;
+        if (status === "SUBSCRIBED") {
+          setRealtimeState("live");
+          scheduleResync(0);
+          return;
+        }
+        if (
+          status === "CHANNEL_ERROR" ||
+          status === "TIMED_OUT" ||
+          status === "CLOSED"
+        ) {
+          setRealtimeState("degraded");
+        }
+      });
+
+    const handleOnline = () => scheduleResync(0);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") scheduleResync(0);
+    };
+    window.addEventListener("online", handleOnline);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      supabase.removeChannel(channel);
+      active = false;
+      if (resyncTimer) clearTimeout(resyncTimer);
+      loadAbortRef.current?.abort();
+      queueRequestIdRef.current += 1;
+      window.removeEventListener("online", handleOnline);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      void supabase.removeChannel(channel);
     };
-  }, [canAccess, isAuthenticated, pageType]);
+  }, [canAccess, isAuthenticated, loadQueue, pageType]);
 
   const handleCheckboxChange = async (
     id: number,
     key: CheckboxKey,
     checked: boolean,
   ) => {
-    await updateMissingItem(pageType, id, checkboxUpdate(key, checked));
+    const pendingKey = `${id}:${key}`;
+    const previousValue = Boolean(
+      missingItems.find((item) => item.id === id)?.[key],
+    );
+    setPendingCheckboxes((current) => new Set(current).add(pendingKey));
+    setMissingItems((items) =>
+      items.map((item) =>
+        item.id === id ? { ...item, [key]: checked } : item,
+      ),
+    );
+
+    try {
+      const updatedItem = await updateMissingItem(pageType, id, key, checked);
+      setMissingItems((items) =>
+        items.map((item) => (item.id === id ? updatedItem : item)),
+      );
+      setError(null);
+    } catch (updateError) {
+      setMissingItems((items) =>
+        items.map((item) =>
+          item.id === id ? { ...item, [key]: previousValue } : item,
+        ),
+      );
+      setError(
+        `Could not update item ${id}: ${getErrorMessage(updateError)} The checkbox was restored to its saved value.`,
+      );
+      void loadQueue(queuePageRef.current, false);
+    } finally {
+      setPendingCheckboxes((current) => {
+        const next = new Set(current);
+        next.delete(pendingKey);
+        return next;
+      });
+    }
   };
 
   const handleClearAll = async () => {
-    const completedItems = await getCompletedMissingItems(pageType);
-    if (completedItems.length === 0) {
-      setDialog({ type: "empty-clear" });
-      return;
-    }
+    try {
+      const completedItems = await getCompletedMissingItems(pageType);
+      if (completedItems.length === 0) {
+        setDialog({ type: "empty-clear" });
+        return;
+      }
 
-    setDialog({
-      type: "confirm-clear",
-      itemIds: completedItems.map((item) => item.id),
-    });
+      setDialog({
+        type: "confirm-clear",
+        itemIds: completedItems.map((item) => item.id),
+      });
+    } catch (clearError) {
+      setError(`Could not load completed items: ${getErrorMessage(clearError)}`);
+    }
   };
 
   const confirmClearCompleted = async (itemIds: number[]) => {
-    await clearMissingItems(pageType, crypto.randomUUID(), itemIds);
-    const items = await getMissingItems(pageType);
-    setMissingItems(items);
-    setDialog(null);
+    try {
+      await clearMissingItems(pageType, crypto.randomUUID(), itemIds);
+      setDialog(null);
+      await loadQueue(queuePageRef.current, false);
+    } catch (clearError) {
+      setError(`Could not clear completed items: ${getErrorMessage(clearError)}`);
+    }
   };
 
   const handleDownloadCompleted = async () => {
-    const completedItems = await getCompletedMissingItems(pageType);
-    if (completedItems.length === 0) {
-      setDialog({ type: "empty-download" });
-      return;
-    }
+    try {
+      const completedItems = await getCompletedMissingItems(pageType);
+      if (completedItems.length === 0) {
+        setDialog({ type: "empty-download" });
+        return;
+      }
 
-    downloadMissingItemsCsv(pageType, completedItems);
+      downloadMissingItemsCsv(pageType, completedItems);
+    } catch (downloadError) {
+      setError(
+        `Could not download completed items: ${getErrorMessage(downloadError)}`,
+      );
+    }
   };
 
   const handleSort = (field: keyof MissingItem) => {
+    setQueuePage(1);
     if (sortField === field) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
@@ -234,12 +408,12 @@ export default function MissingItemsPage({
     }
   };
 
-  const sortedItems = sortField
-    ? [...missingItems].sort((a, b) => {
-        const comparison = compareValues(a[sortField], b[sortField]);
-        return sortDirection === "asc" ? comparison : -comparison;
-      })
-    : missingItems;
+  const totalPages = Math.max(1, Math.ceil(totalCount / queuePageSize));
+  const firstVisibleRow = totalCount === 0 ? 0 : (queuePage - 1) * queuePageSize + 1;
+  const lastVisibleRow = Math.min(
+    (queuePage - 1) * queuePageSize + missingItems.length,
+    totalCount,
+  );
 
   const dialogTitle =
     dialog?.type === "confirm-clear"
@@ -288,75 +462,133 @@ export default function MissingItemsPage({
           </button>
         </div>
       </div>
-      {missingItems.length === 0 ? (
+      {(error || loadError) && (
+        <div className="mb-4 flex items-center justify-between gap-3 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-200">
+          <span>{error ?? loadError}</span>
+          <button
+            type="button"
+            onClick={() => void loadQueue(queuePageRef.current, true)}
+            className="shrink-0 rounded bg-red-700 px-3 py-1 font-bold text-white hover:bg-red-800"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+      {realtimeState !== "live" && (
+        <div className="mb-4 rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+          {realtimeState === "connecting"
+            ? "Connecting to live updates..."
+            : "Live updates are temporarily unavailable. Existing rows remain visible and will resync when the connection returns."}
+        </div>
+      )}
+      {loadState === "loading" && missingItems.length === 0 ? (
+        <p className="text-center text-black dark:text-white">
+          Loading missing items...
+        </p>
+      ) : loadState === "ready" && missingItems.length === 0 ? (
         <p className="text-center text-black dark:text-white">
           No missing items reported yet.
         </p>
-      ) : (
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-gray-200 dark:bg-gray-700">
-              {columns.map((column) => {
-                const sortable = column.sortable ?? column.key !== "completed";
-                return (
-                  <th
-                    key={column.key}
-                    onClick={() => sortable && handleSort(column.key)}
-                    className={`p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600 ${
-                      sortable
-                        ? "cursor-pointer hover:bg-gray-300 dark:hover:bg-gray-600"
-                        : ""
-                    }`}
-                  >
-                    {column.label}
-                    {sortField === column.key && (
-                      <span className="ml-2">
-                        {sortDirection === "asc" ? "↑" : "↓"}
-                      </span>
-                    )}
-                  </th>
-                );
-              })}
-            </tr>
-          </thead>
-          <tbody>
-            {sortedItems.map((item) => (
-              <tr key={item.id} className={getRowClassName(item)}>
-                {columns.map((column): ReactNode => {
-                  if (column.type === "checkbox") {
-                    return (
-                      <td
-                        key={column.key}
-                        className="p-2 text-center text-black border border-gray-300 dark:text-white dark:border-gray-600"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={Boolean(item[column.key])}
-                          onChange={(event) =>
-                            handleCheckboxChange(
-                              item.id,
-                              column.key,
-                              event.target.checked,
-                            )
-                          }
-                        />
-                      </td>
-                    );
-                  }
-
+      ) : missingItems.length > 0 ? (
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-gray-200 dark:bg-gray-700">
+                {columns.map((column) => {
+                  const sortable = column.sortable ?? column.key !== "completed";
                   return (
-                    <td
+                    <th
                       key={column.key}
-                      className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600"
+                      onClick={() => sortable && handleSort(column.key)}
+                      className={`p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600 ${
+                        sortable
+                          ? "cursor-pointer hover:bg-gray-300 dark:hover:bg-gray-600"
+                          : ""
+                      }`}
                     >
-                      {renderFieldValue(item, column)}
-                    </td>
+                      {column.label}
+                      {sortField === column.key && (
+                        <span className="ml-2">
+                          {sortDirection === "asc" ? "↑" : "↓"}
+                        </span>
+                      )}
+                    </th>
                   );
                 })}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {missingItems.map((item) => (
+                <tr key={item.id} className={getRowClassName(item)}>
+                  {columns.map((column): ReactNode => {
+                    if (column.type === "checkbox") {
+                      return (
+                        <td
+                          key={column.key}
+                          className="p-2 text-center text-black border border-gray-300 dark:text-white dark:border-gray-600"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={Boolean(item[column.key])}
+                            disabled={pendingCheckboxes.has(
+                              `${item.id}:${column.key}`,
+                            )}
+                            onChange={(event) =>
+                              handleCheckboxChange(
+                                item.id,
+                                column.key,
+                                event.target.checked,
+                              )
+                            }
+                          />
+                        </td>
+                      );
+                    }
+
+                    return (
+                      <td
+                        key={column.key}
+                        className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600"
+                      >
+                        {renderFieldValue(item, column)}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
+      {missingItems.length > 0 && (
+        <div className="mt-4 flex flex-col items-center justify-between gap-2 text-sm text-black dark:text-white sm:flex-row">
+          <span>
+            Showing {firstVisibleRow}-{lastVisibleRow} of {totalCount} active items
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setQueuePage((current) => Math.max(1, current - 1))}
+              disabled={queuePage <= 1 || loadState === "loading"}
+              className="rounded bg-gray-700 px-4 py-2 font-bold text-white hover:bg-gray-800 disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <span>
+              Page {queuePage} of {totalPages}
+            </span>
+            <button
+              type="button"
+              onClick={() =>
+                setQueuePage((current) => Math.min(totalPages, current + 1))
+              }
+              disabled={queuePage >= totalPages || loadState === "loading"}
+              className="rounded bg-gray-700 px-4 py-2 font-bold text-white hover:bg-gray-800 disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        </div>
       )}
       <Modal
         isOpen={dialog !== null}
