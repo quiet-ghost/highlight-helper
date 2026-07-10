@@ -1,4 +1,4 @@
-import { PageType } from "./missingItems";
+import { PageType } from "./pageType";
 
 export interface WarehouseConfig {
   pageType: PageType;

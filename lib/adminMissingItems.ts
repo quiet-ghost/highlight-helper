@@ -1,5 +1,16 @@
-import { MissingItem, PageType, parseMissingItemRow } from "./missingItems";
+import {
+  missingItemProjection,
+  type MissingItem,
+  parseMissingItemRow,
+} from "./missingItems";
+import {
+  type AdminWarehouseSummary,
+  parseAdminWarehouseSummaries,
+} from "./adminMissingItemSummary";
+import { PageType } from "./pageType";
 import { supabase } from "./supabaseClient";
+
+export type { AdminWarehouseSummary } from "./adminMissingItemSummary";
 
 export type AdminWorkflowStatus =
   | "new"
@@ -23,14 +34,25 @@ export type AdminSortField =
   | "cleared_at"
   | "exported_at";
 
-export interface AdminWarehouseSummary {
-  pageType: PageType;
-  openCount: number;
-  completedReadyCount: number;
-  clearedCount: number;
-  downloadedCount: number;
-  oldestOpenAt: string | null;
-}
+export type AdminMissingItem = Pick<
+  MissingItem,
+  | "id"
+  | "page_type"
+  | "timestamp"
+  | "initials"
+  | "description"
+  | "cart_number"
+  | "order_number"
+  | "bin_location"
+  | "qty_missing"
+  | "completed"
+  | "on_cart"
+  | "looked_for"
+  | "fulf_1"
+  | "fulf_2"
+  | "cleared_at"
+  | "exported_at"
+>;
 
 export interface AdminMissingItemsPageOptions {
   page: number;
@@ -44,9 +66,28 @@ export interface AdminMissingItemsPageOptions {
 }
 
 export interface AdminMissingItemsPageResult {
-  items: MissingItem[];
+  items: AdminMissingItem[];
   totalCount: number;
 }
+
+const adminMissingItemProjection = [
+  "id",
+  "page_type",
+  "timestamp",
+  "initials",
+  "description",
+  "cart_number",
+  "order_number",
+  "bin_location",
+  "qty_missing",
+  "completed",
+  "on_cart",
+  "looked_for",
+  "fulf_1",
+  "fulf_2",
+  "cleared_at",
+  "exported_at",
+].join(",");
 
 const searchPageTypeLabels: Record<PageType, readonly string[]> = {
   tackle: ["tackle", "tackle warehouse"],
@@ -55,7 +96,9 @@ const searchPageTypeLabels: Record<PageType, readonly string[]> = {
   inline: ["inline", "inline warehouse"],
 };
 
-export function deriveAdminWorkflowStatus(item: MissingItem): AdminWorkflowStatus {
+export function deriveAdminWorkflowStatus(
+  item: AdminMissingItem,
+): AdminWorkflowStatus {
   if (item.cleared_at && item.exported_at) return "downloaded";
   if (item.cleared_at) return "cleared";
   if (item.completed) return "completed_ready";
@@ -72,6 +115,74 @@ export function deriveAdminWorkflowStatus(item: MissingItem): AdminWorkflowStatu
   }
 
   return "new";
+}
+
+function getObjectValue(value: unknown, key: string) {
+  if (typeof value !== "object" || value === null || !(key in value)) {
+    return undefined;
+  }
+  return value[key as keyof typeof value];
+}
+
+function parseRequiredString(value: unknown) {
+  return typeof value === "string" ? value : null;
+}
+
+function parseNullableString(value: unknown) {
+  return value === null || typeof value === "string" ? value : undefined;
+}
+
+function parseAdminMissingItemRow(value: unknown): AdminMissingItem | null {
+  const id = getObjectValue(value, "id");
+  const pageTypeValue = getObjectValue(value, "page_type");
+  const pageType = PageType.parse(
+    typeof pageTypeValue === "string" ? pageTypeValue : null,
+  );
+  const timestamp = parseRequiredString(getObjectValue(value, "timestamp"));
+  const initials = parseRequiredString(getObjectValue(value, "initials"));
+  const cartNumber = parseRequiredString(getObjectValue(value, "cart_number"));
+  const orderNumber = parseRequiredString(getObjectValue(value, "order_number"));
+  const binLocation = parseRequiredString(getObjectValue(value, "bin_location"));
+  const qtyMissing = getObjectValue(value, "qty_missing");
+  const clearedAt = parseNullableString(getObjectValue(value, "cleared_at"));
+  const exportedAt = parseNullableString(getObjectValue(value, "exported_at"));
+
+  if (
+    typeof id !== "number" ||
+    !pageType ||
+    timestamp === null ||
+    initials === null ||
+    cartNumber === null ||
+    orderNumber === null ||
+    binLocation === null ||
+    typeof qtyMissing !== "number" ||
+    clearedAt === undefined ||
+    exportedAt === undefined
+  ) {
+    return null;
+  }
+
+  return {
+    id,
+    page_type: pageType,
+    timestamp,
+    initials,
+    description:
+      typeof getObjectValue(value, "description") === "string"
+        ? String(getObjectValue(value, "description"))
+        : undefined,
+    cart_number: cartNumber,
+    order_number: orderNumber,
+    bin_location: binLocation,
+    qty_missing: qtyMissing,
+    completed: getObjectValue(value, "completed") === true,
+    on_cart: getObjectValue(value, "on_cart") === true,
+    looked_for: getObjectValue(value, "looked_for") === true,
+    fulf_1: getObjectValue(value, "fulf_1") === true,
+    fulf_2: getObjectValue(value, "fulf_2") === true,
+    cleared_at: clearedAt,
+    exported_at: exportedAt,
+  };
 }
 
 function sanitizeSearchTerm(value: string) {
@@ -93,13 +204,16 @@ function parseUuid(value: string) {
 
 export async function getAdminMissingItemsPage(
   options: AdminMissingItemsPageOptions,
+  signal?: AbortSignal,
 ): Promise<AdminMissingItemsPageResult> {
   const page = Math.max(1, Math.floor(options.page));
   const pageSize = Math.min(100, Math.max(1, Math.floor(options.pageSize)));
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
-  let query = supabase.from("missing_items").select("*", { count: "exact" });
+  let query = supabase
+    .from("missing_items")
+    .select(adminMissingItemProjection, { count: "exact" });
 
   if (options.pageTypes && options.pageTypes.length > 0) {
     query = query.in("page_type", [...options.pageTypes]);
@@ -193,37 +307,26 @@ export async function getAdminMissingItemsPage(
     );
   }
 
-  const { data, error, count } = await query
+  let request = query
     .order(options.sortField, {
       ascending: options.sortDirection === "asc",
       nullsFirst: false,
     })
+    .order("id", { ascending: options.sortDirection === "asc" })
     .range(from, to);
+
+  if (signal) request = request.abortSignal(signal);
+  const { data, error, count } = await request;
 
   if (error) throw error;
 
   return {
     items: (data || []).flatMap((row) => {
-      const item = parseMissingItemRow(row);
+      const item = parseAdminMissingItemRow(row);
       return item ? [item] : [];
     }),
     totalCount: count ?? 0,
   };
-}
-
-export async function getAdminMissingItems(limit = 500): Promise<MissingItem[]> {
-  const { data, error } = await supabase
-    .from("missing_items")
-    .select("*")
-    .is("cleared_at", null)
-    .order("timestamp", { ascending: false })
-    .limit(limit);
-
-  if (error) throw error;
-  return (data || []).flatMap((row) => {
-    const item = parseMissingItemRow(row);
-    return item ? [item] : [];
-  });
 }
 
 export async function getAdminClearedMissingItems(
@@ -235,7 +338,7 @@ export async function getAdminClearedMissingItems(
 ): Promise<MissingItem[]> {
   const query = supabase
     .from("missing_items")
-    .select("*")
+    .select(missingItemProjection)
     .not("cleared_at", "is", null)
     .order("cleared_at", { ascending: false })
     .limit(options.limit ?? 200);
@@ -261,127 +364,10 @@ export async function getAdminClearedMissingItems(
   });
 }
 
-async function getOpenCount(pageType: PageType) {
-  const { count, error } = await supabase
-    .from("missing_items")
-    .select("id", { count: "exact", head: true })
-    .eq("page_type", pageType)
-    .is("cleared_at", null)
-    .eq("completed", false);
-
+export async function getAdminWarehouseSummaries(signal?: AbortSignal) {
+  let request = supabase.rpc("get_admin_missing_item_summaries");
+  if (signal) request = request.abortSignal(signal);
+  const { data, error } = await request;
   if (error) throw error;
-  return count ?? 0;
-}
-
-async function getCompletedReadyCount(pageType: PageType) {
-  const { count, error } = await supabase
-    .from("missing_items")
-    .select("id", { count: "exact", head: true })
-    .eq("page_type", pageType)
-    .is("cleared_at", null)
-    .eq("completed", true);
-
-  if (error) throw error;
-  return count ?? 0;
-}
-
-async function getClearedCount(pageType: PageType) {
-  const { count, error } = await supabase
-    .from("missing_items")
-    .select("id", { count: "exact", head: true })
-    .eq("page_type", pageType)
-    .not("cleared_at", "is", null);
-
-  if (error) throw error;
-  return count ?? 0;
-}
-
-async function getDownloadedCount(pageType: PageType) {
-  const { count, error } = await supabase
-    .from("missing_items")
-    .select("id", { count: "exact", head: true })
-    .eq("page_type", pageType)
-    .not("cleared_at", "is", null)
-    .not("exported_at", "is", null);
-
-  if (error) throw error;
-  return count ?? 0;
-}
-
-async function getOldestOpenAt(pageType: PageType) {
-  const { data, error } = await supabase
-    .from("missing_items")
-    .select("timestamp")
-    .eq("page_type", pageType)
-    .is("cleared_at", null)
-    .eq("completed", false)
-    .order("timestamp", { ascending: true })
-    .limit(1);
-
-  if (error) throw error;
-  const timestamp = data?.[0]?.timestamp;
-  return typeof timestamp === "string" ? timestamp : null;
-}
-
-export async function getAdminWarehouseSummaries(): Promise<
-  AdminWarehouseSummary[]
-> {
-  return Promise.all(
-    PageType.values.map(async (pageType) => {
-      const [
-        openCount,
-        completedReadyCount,
-        clearedCount,
-        downloadedCount,
-        oldestOpenAt,
-      ] = await Promise.all([
-        getOpenCount(pageType),
-        getCompletedReadyCount(pageType),
-        getClearedCount(pageType),
-        getDownloadedCount(pageType),
-        getOldestOpenAt(pageType),
-      ]);
-
-      return {
-        pageType,
-        openCount,
-        completedReadyCount,
-        clearedCount,
-        downloadedCount,
-        oldestOpenAt,
-      };
-    }),
-  );
-}
-
-export function summarizeAdminMissingItems(
-  activeItems: MissingItem[],
-  clearedItems: MissingItem[],
-): AdminWarehouseSummary[] {
-  return PageType.values.map((pageType) => {
-    const activeWarehouseItems = activeItems.filter(
-      (item) => item.page_type === pageType,
-    );
-    const clearedCount = clearedItems.filter(
-      (item) => item.page_type === pageType,
-    ).length;
-    const downloadedCount = clearedItems.filter(
-      (item) => item.page_type === pageType && item.exported_at,
-    ).length;
-    const openItems = activeWarehouseItems.filter((item) => !item.completed);
-    const oldestOpenAt = openItems.reduce<string | null>((oldest, item) => {
-      if (!item.timestamp) return oldest;
-      if (!oldest) return item.timestamp;
-      return item.timestamp < oldest ? item.timestamp : oldest;
-    }, null);
-
-    return {
-      pageType,
-      openCount: openItems.length,
-      completedReadyCount: activeWarehouseItems.length - openItems.length,
-      clearedCount,
-      downloadedCount,
-      oldestOpenAt,
-    };
-  });
+  return parseAdminWarehouseSummaries(data);
 }

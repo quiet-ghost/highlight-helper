@@ -17,7 +17,7 @@ import { useDarkMode } from "../../lib/useDarkMode";
 
 export default function Tackle() {
   const [cartInput, setCartInput] = useState<string>("");
-  const { isDarkMode, mounted, toggleDarkMode } = useDarkMode();
+  const { isDarkMode, toggleDarkMode } = useDarkMode();
   const [bulkyList, setBulkyList] = useState<CartItem[]>(initialBulkyList);
   const [smallsList, setSmallsList] = useState<CartItem[]>(initialSmallsList);
   const [hugeList, setHugeList] = useState<CartItem[]>(initialHugeList);
@@ -91,10 +91,6 @@ export default function Tackle() {
 
   const renderItemText = (item: CartItem) =>
     item.count > 1 ? `${item.originalText} x${item.count}` : item.originalText;
-
-  if (!mounted) {
-    return null;
-  }
 
   return (
     <>

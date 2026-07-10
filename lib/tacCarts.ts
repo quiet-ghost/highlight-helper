@@ -55,7 +55,7 @@ export const bulkyList: CartItem[] = [
   { id: "B52", number: "252", count: 0, originalText: "252" },
   { id: "B53", number: "255", count: 0, originalText: "255" },
   { id: "B54", number: "256", count: 0, originalText: "256" },
-  { id: "B54", number: "299", count: 0, originalText: "299" },
+  { id: "B55", number: "299", count: 0, originalText: "299" },
   // ... add more bulky items here
 ];
 export const smallsList: CartItem[] = [

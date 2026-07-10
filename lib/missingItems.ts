@@ -1,21 +1,40 @@
 import { supabase } from "./supabaseClient";
+import { MissingItemQuantities } from "./missingItemQuantities";
+import { PageType } from "./pageType";
 
-export type PageType = "tackle" | "tennis" | "running" | "inline";
+export { PageType } from "./pageType";
 
-export const PageType = {
-  values: ["tackle", "tennis", "running", "inline"] as const,
-  parse(value: string | null): PageType | null {
-    if (
-      value === "tackle" ||
-      value === "tennis" ||
-      value === "running" ||
-      value === "inline"
-    ) {
-      return value;
-    }
-    return null;
-  },
-} as const;
+export type MissingItemCheckboxKey =
+  | "completed"
+  | "on_cart"
+  | "looked_for"
+  | "fulf_1"
+  | "fulf_2";
+
+export const missingItemProjection = [
+  "id",
+  "initials",
+  "cart_number",
+  "order_number",
+  "cart_location",
+  "bin_location",
+  "on_hand_qty",
+  "qty_missing",
+  "description",
+  "page_type",
+  "timestamp",
+  "completed",
+  "on_cart",
+  "looked_for",
+  "fulf_1",
+  "fulf_2",
+  "cleared_at",
+  "cleared_by",
+  "clear_batch_id",
+  "exported_at",
+  "exported_by",
+  "export_batch_id",
+].join(",");
 
 export interface MissingItem {
   id: number;
@@ -119,6 +138,11 @@ export type NewMissingItem = Omit<
   | "export_batch_id"
 >;
 
+export interface MissingItemsPageResult {
+  items: MissingItem[];
+  totalCount: number;
+}
+
 async function getSessionUserIdentifier() {
   const {
     data: { session },
@@ -134,22 +158,52 @@ export async function saveMissingItem(item: NewMissingItem) {
 
 export async function saveMissingItems(items: NewMissingItem[]) {
   if (items.length === 0) return;
+  for (const item of items) {
+    const quantities = MissingItemQuantities.validate(item);
+    if (!quantities.ok) {
+      throw new Error(
+        `Cannot save order ${item.order_number}: ${quantities.error.message}`,
+      );
+    }
+  }
   const { error } = await supabase.from("missing_items").insert(items);
   if (error) throw error;
 }
 
-export async function getMissingItems(pageType: PageType): Promise<MissingItem[]> {
-  const { data, error } = await supabase
+export async function getMissingItemsPage(
+  pageType: PageType,
+  page: number,
+  pageSize: number,
+  sortField: keyof MissingItem,
+  sortDirection: "asc" | "desc",
+  signal?: AbortSignal,
+): Promise<MissingItemsPageResult> {
+  const safePage = Math.max(1, Math.floor(page));
+  const safePageSize = Math.min(100, Math.max(1, Math.floor(pageSize)));
+  const from = (safePage - 1) * safePageSize;
+  const to = from + safePageSize - 1;
+  let query = supabase
     .from("missing_items")
-    .select("*")
+    .select(missingItemProjection, { count: "exact" })
     .eq("page_type", pageType)
     .is("cleared_at", null)
-    .order("timestamp", { ascending: false });
+    .order(sortField, { ascending: sortDirection === "asc", nullsFirst: false });
+
+  if (sortField !== "id") {
+    query = query.order("id", { ascending: sortDirection === "asc" });
+  }
+  query = query.range(from, to);
+
+  if (signal) query = query.abortSignal(signal);
+  const { data, error, count } = await query;
   if (error) throw error;
-  return (data || []).flatMap((row) => {
-    const item = parseMissingItemRow(row);
-    return item ? [item] : [];
-  });
+  return {
+    items: (data || []).flatMap((row) => {
+      const item = parseMissingItemRow(row);
+      return item ? [item] : [];
+    }),
+    totalCount: count ?? 0,
+  };
 }
 
 export async function getCompletedMissingItems(
@@ -157,11 +211,12 @@ export async function getCompletedMissingItems(
 ): Promise<MissingItem[]> {
   const { data, error } = await supabase
     .from("missing_items")
-    .select("*")
+    .select(missingItemProjection)
     .eq("page_type", pageType)
     .eq("completed", true)
     .is("cleared_at", null)
-    .order("timestamp", { ascending: false });
+    .order("timestamp", { ascending: false })
+    .order("id", { ascending: false });
   if (error) throw error;
   return (data || []).flatMap((row) => {
     const item = parseMissingItemRow(row);
@@ -172,14 +227,25 @@ export async function getCompletedMissingItems(
 export async function updateMissingItem(
   pageType: PageType,
   id: number,
-  updates: Partial<MissingItem>,
+  key: MissingItemCheckboxKey,
+  checked: boolean,
 ) {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("missing_items")
-    .update(updates)
+    .update({ [key]: checked })
     .eq("id", id)
-    .eq("page_type", pageType);
+    .eq("page_type", pageType)
+    .is("cleared_at", null)
+    .select(missingItemProjection)
+    .single();
   if (error) throw error;
+  const item = parseMissingItemRow(data);
+  if (!item) {
+    throw new Error(
+      `Updated missing item ${id}, but Supabase returned an invalid row. Refresh and try again.`,
+    );
+  }
+  return item;
 }
 
 export async function clearMissingItems(

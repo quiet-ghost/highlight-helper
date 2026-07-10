@@ -36,6 +36,9 @@ yarn-error.log*
 # Worktree directories
 .worktrees/
 
+# Supabase CLI local state
+/supabase/.temp/
+
 # vercel
 .vercel
 
