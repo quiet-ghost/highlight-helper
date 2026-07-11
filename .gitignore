@@ -36,6 +36,7 @@ yarn-error.log*
 
 # Worktree directories
 .worktrees/
+.opencode/
 
 # Supabase CLI local state
 /supabase/.temp/
