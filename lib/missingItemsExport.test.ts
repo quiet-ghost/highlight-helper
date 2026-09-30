@@ -25,9 +25,20 @@ const item: MissingItem = {
   exported_at: null,
   exported_by: null,
   export_batch_id: null,
+  notes: "",
 };
 
 describe("createMissingItemsCsv", () => {
+  it("exports notes with quotes, commas, and line breaks intact", () => {
+    const csv = createMissingItemsCsv([{ ...item, notes: 'Checked bin, "not found"\nAsk receiving' }]);
+    expect(csv.split("\n")[0].endsWith(",notes")).toBe(true);
+    expect(csv).toContain('"Checked bin, ""not found""\nAsk receiving"');
+  });
+
+  it("protects notes from spreadsheet formulas", () => {
+    const csv = createMissingItemsCsv([{ ...item, notes: "=1+1" }]);
+    expect(csv).toContain(",'=1+1\n");
+  });
   it("keeps negative on-hand quantities numeric", () => {
     const csv = createMissingItemsCsv([item]);
     const [header, row] = csv.trimEnd().split("\n");

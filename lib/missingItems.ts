@@ -34,6 +34,7 @@ export const missingItemProjection = [
   "exported_at",
   "exported_by",
   "export_batch_id",
+  "notes",
 ].join(",");
 
 export interface MissingItem {
@@ -59,6 +60,7 @@ export interface MissingItem {
   exported_at: string | null;
   exported_by: string | null;
   export_batch_id: string | null;
+  notes: string;
 }
 
 function getObjectValue(value: unknown, key: string) {
@@ -122,6 +124,7 @@ export function parseMissingItemRow(value: unknown): MissingItem | null {
     exported_at: parseNullableString(getObjectValue(value, "exported_at")),
     exported_by: parseNullableString(getObjectValue(value, "exported_by")),
     export_batch_id: parseNullableString(getObjectValue(value, "export_batch_id")),
+    notes: parseString(getObjectValue(value, "notes")),
   };
 }
 
@@ -136,6 +139,7 @@ export type NewMissingItem = Omit<
   | "exported_at"
   | "exported_by"
   | "export_batch_id"
+  | "notes"
 >;
 
 export interface MissingItemsPageResult {
@@ -246,6 +250,59 @@ export async function updateMissingItem(
     );
   }
   return item;
+}
+
+export type MissingItemNotesSaveResult =
+  | { ok: true; notes: string }
+  | { ok: false; message: string };
+
+export async function updateMissingItemNotes(
+  pageType: PageType,
+  id: number,
+  notes: string,
+): Promise<MissingItemNotesSaveResult> {
+  if (pageType !== "running" && pageType !== "tennis") {
+    return {
+      ok: false,
+      message: "Notes are only editable for Running and Tennis items.",
+    };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("missing_items")
+      .update({ notes })
+      .eq("id", id)
+      .eq("page_type", pageType)
+      .is("cleared_at", null)
+      .select("notes")
+      .single();
+    if (error) {
+      return {
+        ok: false,
+        message:
+          error.code === "PGRST116"
+            ? "This item was cleared or is no longer editable. Refresh the queue before retrying."
+            : error.message,
+      };
+    }
+    const savedNotes = getObjectValue(data, "notes");
+    if (typeof savedNotes !== "string") {
+      return {
+        ok: false,
+        message: "The save response was invalid. Refresh the queue to check the saved note.",
+      };
+    }
+    return { ok: true, notes: savedNotes };
+  } catch (error) {
+    return {
+      ok: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "The notes save failed for an unknown reason. Check your connection and retry.",
+    };
+  }
 }
 
 export async function clearMissingItems(

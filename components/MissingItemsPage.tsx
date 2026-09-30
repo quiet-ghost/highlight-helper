@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import Login from "./Login";
 import Modal from "./Modal";
+import MissingItemNotesField from "./MissingItemNotesField";
 import { useAuth } from "../lib/authContext";
 import {
   clearMissingItems,
@@ -14,6 +15,7 @@ import {
   PageType,
   parseMissingItemRow,
   updateMissingItem,
+  updateMissingItemNotes,
 } from "../lib/missingItems";
 import {
   MissingItemQueueChange,
@@ -35,6 +37,12 @@ type MissingItemsDialog =
   | { type: "confirm-clear"; itemIds: number[] };
 
 export type MissingItemsColumn =
+  | {
+      type: "notes";
+      key: "notes";
+      label: string;
+      sortable: false;
+    }
   | {
       type: "field";
       key: FieldKey;
@@ -104,6 +112,9 @@ export default function MissingItemsPage({
 }: MissingItemsPageProps) {
   const [missingItems, setMissingItems] = useState<MissingItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);
+  const [notesDrafts, setNotesDrafts] = useState<Map<number, string>>(
+    () => new Map(),
+  );
   const [queuePage, setQueuePage] = useState(1);
   const [loadState, setLoadState] = useState<QueueLoadState>("loading");
   const [realtimeState, setRealtimeState] =
@@ -192,6 +203,7 @@ export default function MissingItemsPage({
       queueRequestIdRef.current += 1;
       setMissingItems([]);
       setTotalCount(0);
+      setNotesDrafts(new Map());
       return;
     }
 
@@ -353,6 +365,24 @@ export default function MissingItemsPage({
         return next;
       });
     }
+  };
+
+  const handleNotesSave = async (id: number, value: string) => {
+    const result = await updateMissingItemNotes(pageType, id, value);
+    if (result.ok) {
+      // A notes response must not replace checkbox changes made while saving.
+      setMissingItems((items) =>
+        items.map((item) =>
+          item.id === id ? { ...item, notes: result.notes } : item,
+        ),
+      );
+      setNotesDrafts((current) => {
+        const next = new Map(current);
+        if (next.get(id) === value) next.delete(id);
+        return next;
+      });
+    }
+    return result;
   };
 
   const handleClearAll = async () => {
@@ -521,6 +551,26 @@ export default function MissingItemsPage({
               {missingItems.map((item) => (
                 <tr key={item.id} className={getRowClassName(item)}>
                   {columns.map((column): ReactNode => {
+                    if (column.type === "notes") {
+                      return (
+                        <td
+                          key={column.key}
+                          className="p-2 text-black border border-gray-300 dark:text-white dark:border-gray-600"
+                        >
+                          <MissingItemNotesField
+                            itemId={item.id}
+                            savedValue={item.notes}
+                            draft={notesDrafts.get(item.id)}
+                            onDraftChange={(value) => {
+                              setNotesDrafts((current) =>
+                                new Map(current).set(item.id, value),
+                              );
+                            }}
+                            onSave={(value) => handleNotesSave(item.id, value)}
+                          />
+                        </td>
+                      );
+                    }
                     if (column.type === "checkbox") {
                       return (
                         <td
