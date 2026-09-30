@@ -18,6 +18,7 @@ function createItem(overrides: Partial<MissingItem> = {}): MissingItem {
     completed: false,
     on_cart: false,
     looked_for: false,
+    notes: "",
     fulf_1: false,
     fulf_2: false,
     cleared_at: null,

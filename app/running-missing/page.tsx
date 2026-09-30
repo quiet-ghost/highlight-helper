@@ -19,6 +19,7 @@ const columns: MissingItemsColumn[] = [
   { type: "checkbox", key: "completed", label: "Complete", sortable: false },
   { type: "checkbox", key: "on_cart", label: "On Cart" },
   { type: "checkbox", key: "looked_for", label: "Looked For" },
+  { type: "notes", key: "notes", label: "Notes", sortable: false },
 ];
 
 function getRowClassName(item: MissingItem) {

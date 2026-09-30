@@ -23,6 +23,7 @@ const exportColumns: Array<{ key: keyof MissingItem; label: string }> = [
   { key: "exported_at", label: "exported_at" },
   { key: "exported_by", label: "exported_by" },
   { key: "export_batch_id", label: "export_batch_id" },
+  { key: "notes", label: "notes" },
 ];
 
 interface MissingItemsExportContext {

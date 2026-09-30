@@ -13,6 +13,21 @@ Built as an internal tool that empowers operators to log missing items seamlessl
 - **Admin Dashboard**: Secure access to view and manage reported items.
 - **Efficient Workflow**: Reduces manual effort by integrating with existing warehouse processes.
 
+## Missing item notes
+
+Running and Tennis queues have a Notes field immediately after Looked For.
+Changed text saves when the field loses focus. Failed saves retain the draft
+in the current page, with a Retry save button. Drafts survive queue refreshes,
+sorting, and pagination, but not browser reloads or leaving the page.
+Saved notes are included as the last CSV column; existing columns retain their order.
+
+Before deploying this feature, apply
+`supabase/migrations/20260930000000_add_missing_item_notes.sql`
+to the target Supabase database. The shared row projection requires this column
+for all warehouse queues. Verify authenticated Running and Tennis users can
+update `notes` under the project's existing row-level security policies.
+The migration adds a column only; it does not change policies or existing data.
+
 ## Tools & Tech Stack
 
 - **Next.js**: React framework for server-side rendering and static site generation, powering the frontend and routing.
