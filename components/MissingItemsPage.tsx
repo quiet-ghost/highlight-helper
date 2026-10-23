@@ -8,6 +8,7 @@ import MissingItemNotesField from "./MissingItemNotesField";
 import { useAuth } from "../lib/authContext";
 import {
   clearMissingItems,
+  completeAllMissingItems,
   getCompletedMissingItems,
   getMissingItemsPage,
   MissingItem,
@@ -124,6 +125,7 @@ export default function MissingItemsPage({
   const [pendingCheckboxes, setPendingCheckboxes] = useState<Set<string>>(
     () => new Set(),
   );
+  const [isCompletingAll, setIsCompletingAll] = useState(false);
   const { isDarkMode } = useDarkMode();
   const [sortField, setSortField] = useState<keyof MissingItem | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
@@ -385,6 +387,23 @@ export default function MissingItemsPage({
     return result;
   };
 
+  const handleCompleteAll = async () => {
+    if (isCompletingAll || pendingCheckboxes.size > 0) return;
+    setIsCompletingAll(true);
+    setError(null);
+    try {
+      const result = await completeAllMissingItems(pageType);
+      if (!result.ok) {
+        setError(
+          `Could not complete all items: ${result.message} Refresh the queue to check saved status before retrying.`,
+        );
+      }
+      await loadQueue(queuePageRef.current, false);
+    } finally {
+      setIsCompletingAll(false);
+    }
+  };
+
   const handleClearAll = async () => {
     try {
       const completedItems = await getCompletedMissingItems(pageType);
@@ -429,6 +448,7 @@ export default function MissingItemsPage({
   };
 
   const handleSort = (field: keyof MissingItem) => {
+    if (isCompletingAll) return;
     setQueuePage(1);
     if (sortField === field) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
@@ -463,23 +483,38 @@ export default function MissingItemsPage({
       <h1 className="mb-5 text-3xl font-bold text-center text-black dark:text-white">
         {title}
       </h1>
-      <div className="flex justify-between mb-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
         <Link href={backHref}>
           <button className="px-4 py-2 font-bold text-white bg-red-500 rounded hover:bg-red-600">
             {backLabel}
           </button>
         </Link>
-        <div className="space-x-2">
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={handleCompleteAll}
+            disabled={
+              isCompletingAll ||
+              loadState !== "ready" ||
+              totalCount === 0 ||
+              pendingCheckboxes.size > 0
+            }
+            className="px-4 py-2 font-bold text-white bg-green-600 rounded hover:bg-green-700 disabled:opacity-50"
+          >
+            {isCompletingAll ? "Completing..." : "Complete All"}
+          </button>
           <button
             onClick={handleClearAll}
-            className="px-4 py-2 font-bold text-white bg-red-500 rounded hover:bg-red-600"
+            disabled={isCompletingAll}
+            className="px-4 py-2 font-bold text-white bg-red-500 rounded hover:bg-red-600 disabled:opacity-50"
           >
             Clear Completed
           </button>
           {canExport && (
             <button
               onClick={handleDownloadCompleted}
-              className="px-4 py-2 font-bold text-white bg-blue-500 rounded hover:bg-blue-600"
+              disabled={isCompletingAll}
+              className="px-4 py-2 font-bold text-white bg-blue-500 rounded hover:bg-blue-600 disabled:opacity-50"
             >
               Download Completed CSV
             </button>
@@ -580,9 +615,10 @@ export default function MissingItemsPage({
                           <input
                             type="checkbox"
                             checked={Boolean(item[column.key])}
-                            disabled={pendingCheckboxes.has(
-                              `${item.id}:${column.key}`,
-                            )}
+                            disabled={
+                              isCompletingAll ||
+                              pendingCheckboxes.has(`${item.id}:${column.key}`)
+                            }
                             onChange={(event) =>
                               handleCheckboxChange(
                                 item.id,
@@ -619,7 +655,7 @@ export default function MissingItemsPage({
             <button
               type="button"
               onClick={() => setQueuePage((current) => Math.max(1, current - 1))}
-              disabled={queuePage <= 1 || loadState === "loading"}
+              disabled={queuePage <= 1 || loadState === "loading" || isCompletingAll}
               className="rounded bg-gray-700 px-4 py-2 font-bold text-white hover:bg-gray-800 disabled:opacity-50"
             >
               Previous
@@ -632,7 +668,7 @@ export default function MissingItemsPage({
               onClick={() =>
                 setQueuePage((current) => Math.min(totalPages, current + 1))
               }
-              disabled={queuePage >= totalPages || loadState === "loading"}
+              disabled={queuePage >= totalPages || loadState === "loading" || isCompletingAll}
               className="rounded bg-gray-700 px-4 py-2 font-bold text-white hover:bg-gray-800 disabled:opacity-50"
             >
               Next

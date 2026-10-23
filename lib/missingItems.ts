@@ -252,6 +252,35 @@ export async function updateMissingItem(
   return item;
 }
 
+/** Complete All failures leave the saved state uncertain until the queue is refreshed. */
+export type MissingItemsCompleteResult =
+  | { ok: true }
+  | { ok: false; message: string };
+
+/** Completes every active, incomplete item in one warehouse, regardless of pagination. */
+export async function completeAllMissingItems(
+  pageType: PageType,
+): Promise<MissingItemsCompleteResult> {
+  try {
+    const { error } = await supabase
+      .from("missing_items")
+      .update({ completed: true })
+      .eq("page_type", pageType)
+      .not("completed", "is", true)
+      .is("cleared_at", null);
+    if (error) return { ok: false, message: error.message };
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "The bulk update failed for an unknown reason.",
+    };
+  }
+}
+
 export type MissingItemNotesSaveResult =
   | { ok: true; notes: string }
   | { ok: false; message: string };
